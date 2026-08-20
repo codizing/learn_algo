@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     });
 
     window.addEventListener('storage', (e) => {
-      if (e.key === 'csp_db_v4') updateHomeYearCounts();
+      if (e.key === 'csp_db_v5') updateHomeYearCounts();
     });
   }
 });

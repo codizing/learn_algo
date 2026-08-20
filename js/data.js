@@ -8,7 +8,7 @@
    directly.
    ========================================================================== */
 
-const DB_KEY = 'csp_db_v4';
+const DB_KEY = 'csp_db_v5';
 let memoryDB = null;
 
 // Persistent local storage cache. Updated whenever Firestore syncs.
