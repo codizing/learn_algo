@@ -8,12 +8,7 @@
    directly.
    ========================================================================== */
 
-try {
-  ['csp_db_v1', 'csp_db_v2', 'csp_db_v3', 'csp_db_v4', 'csp_db_v5', 'csp_db', 'csp_session_db_v1', 'csp_session_db'].forEach(k => {
-    try { localStorage.removeItem(k); } catch (err) {}
-    try { sessionStorage.removeItem(k); } catch (err) {}
-  });
-} catch (e) {}
+const DB_KEY = 'csp_db_v6';
 
 const SEED = {
   courses: [],
@@ -24,15 +19,49 @@ const SEED = {
   users: []
 };
 
-let memoryDB = structuredClone(SEED);
+const tombstones = {
+  courses: new Set(),
+  quizzes: new Set()
+};
+
+let memoryDB = null;
+
+(function migrateOldDb() {
+  try {
+    if (localStorage.getItem(DB_KEY)) return;
+    const oldKeys = ['csp_db_v5', 'csp_db_v4', 'csp_session_db_v1', 'csp_db'];
+    for (const k of oldKeys) {
+      const raw = localStorage.getItem(k);
+      if (raw) {
+        localStorage.setItem(DB_KEY, raw);
+        break;
+      }
+    }
+  } catch (e) {}
+})();
 
 function loadDB() {
-  if (!memoryDB) memoryDB = structuredClone(SEED);
+  if (memoryDB) return structuredClone(memoryDB);
+  try {
+    const raw = localStorage.getItem(DB_KEY);
+    if (raw) {
+      memoryDB = normalizeDB(JSON.parse(raw));
+      return structuredClone(memoryDB);
+    }
+  } catch (e) {
+    console.warn('loadDB error:', e);
+  }
+  memoryDB = structuredClone(SEED);
   return structuredClone(memoryDB);
 }
 
 function saveDB(db) {
   memoryDB = structuredClone(normalizeDB(db));
+  try {
+    localStorage.setItem(DB_KEY, JSON.stringify(memoryDB));
+  } catch (e) {
+    console.warn('saveDB localStorage error:', e);
+  }
 }
 
 function normalizeQuizQuestion(q) {
@@ -40,7 +69,7 @@ function normalizeQuizQuestion(q) {
   return {
     ...q,
     id: q.id || q.firestoreId || ('q_' + Math.random().toString(36).substr(2, 9)),
-    firestoreId: q.firestoreId || q.id || '',
+    firestoreId: q.firestoreId || '',
     year: Number(q.year) || 1,
     q_en: q.q_en || q.q_fr || '',
     q_fr: q.q_fr || q.q_en || '',
@@ -55,7 +84,7 @@ function normalizeCourse(c) {
   return {
     ...c,
     id: c.id || c.firestoreId || ('c' + Date.now()),
-    firestoreId: c.firestoreId || c.id || '',
+    firestoreId: c.firestoreId || '',
     type: c.type || 'course',
     year: Number(c.year) || 1,
     code: c.code || 'CS',
@@ -69,8 +98,61 @@ function normalizeCourse(c) {
   };
 }
 
+function courseFingerprint(c) {
+  return [c.type || 'course', Number(c.year) || 1, (c.code || '').toUpperCase(), c.title_en || c.title_fr || ''].join('|');
+}
+
+function dedupeCourses(list) {
+  const items = (list || []).map(normalizeCourse).filter(Boolean);
+  const byId = new Map();
+  items.forEach(c => {
+    const key = String(c.firestoreId || c.id);
+    const prev = byId.get(key);
+    if (!prev || (c.firestoreId && !prev.firestoreId)) byId.set(key, c);
+  });
+  const arr = Array.from(byId.values());
+  const synced = arr.filter(c => c.firestoreId);
+  const unsynced = arr.filter(c => !c.firestoreId);
+  const syncedPrints = new Set(synced.map(courseFingerprint));
+  return synced.concat(unsynced.filter(u => !syncedPrints.has(courseFingerprint(u))));
+}
+
 function normalizeCourses(list) {
-  return (list || []).map(normalizeCourse).filter(Boolean);
+  return dedupeCourses(list);
+}
+
+function mergeCourses(localList, cloudList) {
+  const map = new Map();
+  const put = (c) => {
+    const n = normalizeCourse(c);
+    if (!n) return;
+    const key = String(n.firestoreId || n.id);
+    if (tombstones.courses.has(key) || tombstones.courses.has(String(n.id))) return;
+    const prev = map.get(key);
+    if (!prev || (n.firestoreId && !prev.firestoreId)) map.set(key, n);
+  };
+  (localList || []).forEach(put);
+  (cloudList || []).forEach(put);
+  return dedupeCourses(Array.from(map.values()));
+}
+
+function mergeQuizzes(localQ, cloudQ) {
+  const result = { 1: [], 2: [] };
+  for (const y of [1, 2]) {
+    const map = new Map();
+    const put = (q) => {
+      const n = normalizeQuizQuestion(q);
+      if (!n) return;
+      const key = String(n.firestoreId || n.id);
+      if (tombstones.quizzes.has(key) || tombstones.quizzes.has(String(n.id))) return;
+      const prev = map.get(key);
+      if (!prev || (n.firestoreId && !prev.firestoreId)) map.set(key, n);
+    };
+    ((localQ && (localQ[y] || localQ[String(y)])) || []).forEach(put);
+    ((cloudQ && (cloudQ[y] || cloudQ[String(y)])) || []).forEach(put);
+    result[y] = Array.from(map.values());
+  }
+  return result;
 }
 
 function normalizeDB(db) {
@@ -189,15 +271,12 @@ const Store = {
         let updated = false;
 
         if (cloudCourses !== null) {
-          db.courses = normalizeCourses(cloudCourses);
+          db.courses = mergeCourses(db.courses, cloudCourses);
           updated = true;
         }
 
         if (cloudQuizzes !== null) {
-          db.quizzes = {
-            1: ((cloudQuizzes[1] || cloudQuizzes['1']) || []).map(normalizeQuizQuestion).filter(Boolean),
-            2: ((cloudQuizzes[2] || cloudQuizzes['2']) || []).map(normalizeQuizQuestion).filter(Boolean)
-          };
+          db.quizzes = mergeQuizzes(db.quizzes, cloudQuizzes);
           updated = true;
         }
 
@@ -217,19 +296,18 @@ const Store = {
     }
   },
   applyCloudCourses(courses) {
+    if (courses == null) return;
     withDbLock(() => {
       const db = loadDB();
-      db.courses = normalizeCourses(courses);
+      db.courses = mergeCourses(db.courses, courses);
       saveDB(db);
     }).then(() => notifyStoreUpdated());
   },
   applyCloudQuizzes(quizzes) {
+    if (quizzes == null) return;
     withDbLock(() => {
       const db = loadDB();
-      db.quizzes = {
-        1: ((quizzes && (quizzes[1] || quizzes['1'])) || []).map(normalizeQuizQuestion).filter(Boolean),
-        2: ((quizzes && (quizzes[2] || quizzes['2'])) || []).map(normalizeQuizQuestion).filter(Boolean)
-      };
+      db.quizzes = mergeQuizzes(db.quizzes, quizzes);
       saveDB(db);
     }).then(() => notifyStoreUpdated());
   },
@@ -297,18 +375,16 @@ const Store = {
         const id = await window.FB_Sync.saveCourse(course);
         if (id) {
           course.firestoreId = id;
-          // Update the saved copy's id to the real Firestore id
           await withDbLock(() => {
             const db = loadDB();
-            const idx = db.courses.findIndex(c => c.id === course.id || c.id === ((course.type || 'c') + ''));
+            const idx = db.courses.findIndex(c => c.id === course.id);
             if (idx > -1) {
               db.courses[idx].id = id;
               db.courses[idx].firestoreId = id;
             } else {
-              // If not found by temp id, just push the updated version
-              db.courses = db.courses.filter(c => c.id !== course.id);
-              db.courses.push(normalizeCourse({ ...course, id }));
+              db.courses.push(normalizeCourse({ ...course, id, firestoreId: id }));
             }
+            db.courses = dedupeCourses(db.courses);
             saveDB(db);
           });
           course.id = id;
@@ -316,7 +392,10 @@ const Store = {
         }
       } catch (e) {
         console.warn('addCourse Firestore save error:', e);
+        course._cloudError = e.message || 'CLOUD_SAVE_FAILED';
       }
+    } else {
+      course._cloudError = 'Firebase is not loaded';
     }
 
     return course;
@@ -336,6 +415,10 @@ const Store = {
     await withDbLock(() => {
       const db = loadDB();
       target = db.courses.find(c => c.id === id || c.firestoreId === id);
+      if (target) {
+        tombstones.courses.add(String(target.id));
+        if (target.firestoreId) tombstones.courses.add(String(target.firestoreId));
+      }
       db.courses = db.courses.filter(c => c.id !== id && c.firestoreId !== id);
       if (db.users) {
         db.users.forEach(u => {
@@ -398,7 +481,10 @@ const Store = {
         }
       } catch (e) {
         console.warn('addQuestion Firestore save error:', e);
+        question._cloudError = e.message || 'CLOUD_SAVE_FAILED';
       }
+    } else {
+      question._cloudError = 'Firebase is not loaded';
     }
 
     return question;
@@ -412,6 +498,10 @@ const Store = {
       const i = list.findIndex(q => q.id === questionId || q.firestoreId === questionId);
       if (i > -1) {
         target = list.splice(i, 1)[0];
+        if (target) {
+          tombstones.quizzes.add(String(target.id));
+          if (target.firestoreId) tombstones.quizzes.add(String(target.firestoreId));
+        }
       }
       saveDB(db);
     });
@@ -624,6 +714,10 @@ const Store = {
     });
   },
   resetAll() {
-    localStorage.setItem(DB_KEY, JSON.stringify(SEED));
+    memoryDB = structuredClone(SEED);
+    try { localStorage.setItem(DB_KEY, JSON.stringify(SEED)); } catch (e) {}
+    notifyStoreUpdated();
   }
 };
+
+window.Store = Store;

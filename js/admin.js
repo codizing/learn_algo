@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
       const pdf_en = (f.get('pdfUrl_en') || '').trim();
       const pdf_fr = (f.get('pdfUrl_fr') || '').trim();
 
-      await Store.addCourse({
+      const saved = await Store.addCourse({
         type: f.get('type') || 'course',
         year: Number(f.get('year')) || 1,
         code: (f.get('code') || 'CS').trim().toUpperCase(),
@@ -80,7 +80,11 @@ document.addEventListener('DOMContentLoaded', ()=>{
       e.target.reset();
       renderCourseTable();
       renderUsersTable();
-      showToast(t('toast_saved'));
+      if (saved && saved.firestoreId) {
+        showToast(t('toast_saved'));
+      } else {
+        alert((saved && saved._cloudError) || 'Not saved to Firebase. Sign in with Google as the admin account, then try again.');
+      }
     });
   }
 
@@ -264,7 +268,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
         return;
       }
 
-      await Store.addQuestion(year, {
+      const savedQ = await Store.addQuestion(year, {
         q_en: q_en || q_fr,
         q_fr: q_fr || q_en,
         opts_en: opts_en,
@@ -283,7 +287,11 @@ document.addEventListener('DOMContentLoaded', ()=>{
       selectedCorrectIdx = 0;
       renderDynamicOptions();
       renderQuizTable();
-      showToast(t('toast_saved'));
+      if (savedQ && savedQ.firestoreId) {
+        showToast(t('toast_saved'));
+      } else {
+        alert((savedQ && savedQ._cloudError) || 'Quiz not saved to Firebase. Sign in with Google as the admin account, then try again.');
+      }
     });
   }
 
@@ -566,15 +574,29 @@ document.addEventListener('DOMContentLoaded', ()=>{
     }
   }
 
+  function updateFirebaseWriteStatus() {
+    const notice = document.querySelector('.notice');
+    const fbUser = window.firebaseAuth && window.firebaseAuth.currentUser;
+    const ok = !!(fbUser && fbUser.email && window.isAdminEmail && window.isAdminEmail(fbUser.email));
+    if (!notice) return;
+    if (ok) {
+      notice.textContent = 'Signed in to Firebase as ' + fbUser.email + '. Courses, TDs, TPs, exams and quizzes will save to the database.';
+    } else {
+      notice.textContent = 'Database writes need a real Google sign-in as studyinfowithmr@gmail.com or cfpakifen@gmail.com. A saved browser session is not enough.';
+    }
+  }
+
   function checkAdminAuth() {
+    const fbUser = window.firebaseAuth && window.firebaseAuth.currentUser;
     const user = (typeof getAuthUser === 'function') ? getAuthUser() : null;
+    const email = (fbUser && fbUser.email) || (user && user.email);
     let isAdmin = false;
-    if (user && user.email) {
+    if (email) {
       if (typeof window.isAdminEmail === 'function') {
-        isAdmin = window.isAdminEmail(user.email);
+        isAdmin = window.isAdminEmail(email);
       } else {
         const admins = ['studyinfowithmr@gmail.com', 'cfpakifen@gmail.com'];
-        isAdmin = admins.map(e => e.toLowerCase()).includes(user.email.toLowerCase());
+        isAdmin = admins.map(e => e.toLowerCase()).includes(email.toLowerCase());
       }
     }
 
@@ -591,6 +613,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     if (shell) shell.style.display = 'grid';
     if (notice) notice.style.display = 'block';
 
+    updateFirebaseWriteStatus();
     onAdminReady();
   }
 
@@ -617,7 +640,10 @@ document.addEventListener('DOMContentLoaded', ()=>{
     }
 
     renderCourseTable();
-  // Register event listeners immediately
+    renderQuizTable();
+    renderUsersTable();
+  }
+
   document.addEventListener('dbupdated', ()=>{
     renderCourseTable();
     renderQuizTable();
@@ -633,6 +659,16 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
   document.addEventListener('userchange', checkAdminAuth);
 
-  checkAdminAuth();
-  initAdminData();
+  (async function waitForAuthThenStart() {
+    if (window.firebaseAuth) {
+      await new Promise(resolve => {
+        const unsub = window.firebaseAuth.onAuthStateChanged(() => {
+          unsub();
+          resolve();
+        });
+      });
+    }
+    checkAdminAuth();
+    initAdminData();
+  })();
 });

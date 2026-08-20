@@ -16,6 +16,7 @@ if (typeof firebase !== 'undefined') {
   const auth = firebase.auth();
   const googleProvider = new firebase.auth.GoogleAuthProvider();
   // Force Google to show all accounts on the user's phone or computer
+  googleProvider.addScope('email');
   googleProvider.setCustomParameters({ prompt: 'select_account' });
 
   window.firebaseApp = firebase.app();
@@ -175,16 +176,12 @@ if (typeof firebase !== 'undefined') {
 
   window.FB_Sync = {
     async _fetchCollection(name, mapDoc) {
-      // Always try REST first — it is the most reliable cross-device fetch
       const restDocs = await fetchFromFirestoreRest(name);
-      if (restDocs !== null && restDocs.length > 0) {
-        return restDocs;
-      }
+      if (restDocs !== null) return restDocs;
 
-      // Fallback to Firebase SDK (slower, may hang)
       try {
-        const sdkPromise = db.collection(name).get();
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
+        const sdkPromise = db.collection(name).get({ source: 'server' });
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
         const snap = await Promise.race([sdkPromise, timeoutPromise]);
         if (snap && snap.docs) {
           return snap.docs.map(mapDoc);
@@ -192,19 +189,22 @@ if (typeof firebase !== 'undefined') {
       } catch (e) {
         console.warn(`SDK fetch ${name} failed:`, e.message);
       }
-      return [];
+      return null;
     },
     async fetchCourses() {
       return this._fetchCollection('courses', d => ({ ...d.data(), id: d.id, firestoreId: d.id }));
     },
     async _getIdToken() {
       try {
-        // Wait up to 5s for Firebase Auth to restore session before giving up
-        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 5000));
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 8000));
         await Promise.race([_authReady, timeoutPromise]);
-        const user = auth.currentUser;
+        let user = auth.currentUser;
+        if (!user) {
+          await new Promise(resolve => setTimeout(resolve, 400));
+          user = auth.currentUser;
+        }
         if (user) {
-          const token = await user.getIdToken(true); // force refresh
+          const token = await user.getIdToken(true);
           console.log('Got Firebase ID token for user:', user.email);
           return token;
         }
@@ -213,6 +213,16 @@ if (typeof firebase !== 'undefined') {
         console.warn('_getIdToken error:', e);
       }
       return null;
+    },
+    async _requireAdminAuth() {
+      const token = await this._getIdToken();
+      const user = auth.currentUser;
+      const email = (user && user.email) ? user.email.toLowerCase() : '';
+      const isAdmin = window.isAdminEmail ? window.isAdminEmail(email) : false;
+      if (!token || !user || !isAdmin) {
+        throw new Error('Sign in with Google as studyinfowithmr@gmail.com or cfpakifen@gmail.com so Firestore can save. Browser-only login is not enough.');
+      }
+      return { token, user };
     },
     async _writeToFirestoreRest(collection, docData, docId) {
       // Convert JS object to Firestore REST format
@@ -241,7 +251,7 @@ if (typeof firebase !== 'undefined') {
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const base = `https://firestore.googleapis.com/v1/projects/website-570e4/databases/(default)/documents/${collection}`;
-      const url = docId ? `${base}/${docId}?currentDocument.exists=false` : base;
+      const url = docId ? `${base}/${encodeURIComponent(docId)}` : base;
       const method = docId ? 'PATCH' : 'POST';
 
       const r = await fetch(url, { method, headers, body });
@@ -272,22 +282,23 @@ if (typeof firebase !== 'undefined') {
         pdfUrl_fr: course.pdfUrl_fr || '',
         videoUrl: course.videoUrl || ''
       };
-      // Try SDK first (works when auth is established)
+      await this._requireAdminAuth();
+      try {
+        const id = await this._writeToFirestoreRest('courses', cleanCourse);
+        if (id) {
+          console.log("REST saved course:", id);
+          return id;
+        }
+      } catch (e) {
+        console.warn("REST saveCourse failed, trying SDK:", e.message);
+      }
       try {
         const docRef = await db.collection("courses").add(cleanCourse);
         console.log("SDK saved course:", docRef.id);
         return docRef.id;
       } catch (e) {
-        console.warn("SDK saveCourse failed, trying REST:", e.message);
-      }
-      // Fallback: REST API with ID token
-      try {
-        const id = await this._writeToFirestoreRest('courses', cleanCourse);
-        console.log("REST saved course:", id);
-        return id;
-      } catch (e) {
-        console.error("REST saveCourse also failed:", e.message);
-        return null;
+        console.error("SDK saveCourse also failed:", e.message);
+        throw e;
       }
     },
     async deleteCourse(id) {
@@ -334,20 +345,23 @@ if (typeof firebase !== 'undefined') {
         opts_fr: Array.isArray(question.opts_fr) ? question.opts_fr : [],
         correct: Number(question.correct) || 0
       };
+      await this._requireAdminAuth();
+      try {
+        const id = await this._writeToFirestoreRest('quizzes', cleanQ);
+        if (id) {
+          console.log("REST saved quiz question:", id);
+          return id;
+        }
+      } catch (e) {
+        console.warn("REST saveQuizQuestion failed, trying SDK:", e.message);
+      }
       try {
         const docRef = await db.collection("quizzes").add(cleanQ);
         console.log("SDK saved quiz question:", docRef.id);
         return docRef.id;
       } catch (e) {
-        console.warn("SDK saveQuizQuestion failed, trying REST:", e.message);
-      }
-      try {
-        const id = await this._writeToFirestoreRest('quizzes', cleanQ);
-        console.log("REST saved quiz question:", id);
-        return id;
-      } catch (e) {
-        console.error("REST saveQuizQuestion also failed:", e.message);
-        return null;
+        console.error("SDK saveQuizQuestion also failed:", e.message);
+        throw e;
       }
     },
     async deleteQuizQuestion(id) {
@@ -416,7 +430,7 @@ if (typeof firebase !== 'undefined') {
       if (courses !== null && window.Store && typeof Store.applyCloudCourses === 'function') {
         Store.applyCloudCourses(courses);
       }
-      if (quizzes && window.Store && typeof Store.applyCloudQuizzes === 'function') {
+      if (quizzes !== null && window.Store && typeof Store.applyCloudQuizzes === 'function') {
         const res = { 1: [], 2: [] };
         quizzes.forEach(q => {
           const y = Number(q.year) || 1;
@@ -438,6 +452,7 @@ if (typeof firebase !== 'undefined') {
 
     try {
       db.collection('courses').onSnapshot((snap) => {
+        if (snap.metadata && snap.metadata.fromCache && snap.empty) return;
         const courses = snap.docs.map(d => ({ ...d.data(), id: d.id, firestoreId: d.id }));
         if (typeof Store.applyCloudCourses === 'function') {
           Store.applyCloudCourses(courses);
@@ -449,6 +464,7 @@ if (typeof firebase !== 'undefined') {
       });
 
       db.collection('quizzes').onSnapshot((snap) => {
+        if (snap.metadata && snap.metadata.fromCache && snap.empty) return;
         const res = { 1: [], 2: [] };
         snap.docs.forEach(d => {
           const q = { ...d.data(), id: d.id, firestoreId: d.id };
@@ -493,11 +509,11 @@ if (typeof firebase !== 'undefined') {
         fetchFromFirestoreRest('quizzes')
       ]);
 
-      if (courses && courses.length && window.Store && typeof Store.applyCloudCourses === 'function') {
+      if (courses !== null && window.Store && typeof Store.applyCloudCourses === 'function') {
         Store.applyCloudCourses(courses);
       }
 
-      if (quizzes && window.Store && typeof Store.applyCloudQuizzes === 'function') {
+      if (quizzes !== null && window.Store && typeof Store.applyCloudQuizzes === 'function') {
         const res = { 1: [], 2: [] };
         quizzes.forEach(q => {
           const y = Number(q.year) || 1;
