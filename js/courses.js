@@ -297,12 +297,14 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   currentYear = getYearParam();
   activeTab = getTabParam();
 
-  // Render immediately from cache
+  // Render immediately from memory
   renderCourses();
+
+  let initialCloudSyncDone = false;
 
   async function loadCoursesFromCloud() {
     const list = document.getElementById('course-list');
-    if (list && !Store.getAllCourses().length) {
+    if (list && !Store.getAllCourses().length && !initialCloudSyncDone) {
       list.innerHTML = `<div class="empty-state">${t('loading') || 'Loading courses…'}</div>`;
     }
 
@@ -312,10 +314,11 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       try { await window.cloudSyncReady; } catch (e) { /* logged in firebase.js */ }
     }
 
-    if (!Store.getAllCourses().length && Store.fetchCoursesFromCloud) {
+    if (window.Store && Store.fetchCoursesFromCloud) {
       try { await Store.fetchCoursesFromCloud(); } catch (e) { console.warn('Direct cloud fetch failed', e); }
     }
 
+    initialCloudSyncDone = true;
     renderCourses();
   }
 
@@ -323,15 +326,11 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 
   // Instant Year Switcher click listener
   document.querySelectorAll('#year-switcher a').forEach(a=>{
-    const triggerYear = async (e)=>{
+    const triggerYear = (e)=>{
       e.preventDefault();
       currentYear = Number(a.dataset.year) || 1;
       try { sessionStorage.setItem('csp_active_year', currentYear); } catch(err){}
       history.replaceState(null, '', `courses.html?year=${currentYear}&tab=${activeTab}`);
-      if (window.Store && typeof Store.syncWithFirebase === 'function') {
-        await Store.syncWithFirebase();
-        Store.getQuiz(1);
-      }
       renderCourses();
     };
     a.addEventListener('click', triggerYear);
@@ -340,13 +339,9 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 
   // Setup tab click listeners (Courses, TD, TP, Exam)
   document.querySelectorAll('#category-menu button.tab-btn').forEach(btn=>{
-    const triggerTab = async ()=>{
+    const triggerTab = ()=>{
       activeTab = btn.dataset.tab;
       history.replaceState(null, '', `courses.html?year=${currentYear}&tab=${activeTab}`);
-      if (window.Store && typeof Store.syncWithFirebase === 'function') {
-        await Store.syncWithFirebase();
-        Store.getQuiz(1);
-      }
       renderCourses();
     };
     btn.addEventListener('click', triggerTab);
@@ -356,38 +351,22 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   // Handle Quiz tab click to keep active year
   const quizTabLink = document.getElementById('tab-quiz');
   if (quizTabLink) {
-    const triggerQuiz = async (e) => {
+    const triggerQuiz = (e) => {
       e.preventDefault();
-      if (window.Store && typeof Store.syncWithFirebase === 'function') {
-        await Store.syncWithFirebase();
-        Store.getQuiz(1);
-      }
       location.href = `quiz.html?year=${currentYear}`;
     };
     quizTabLink.addEventListener('click', triggerQuiz);
     quizTabLink.addEventListener('touchstart', triggerQuiz, { passive: true });
   }
 
-  if (window.Store && typeof Store.syncWithFirebase === 'function') {
-    await Store.syncWithFirebase();
-    Store.getQuiz(1);
-  }
   await loadCoursesFromCloud();
 
   // Mobile browsers / back button: re-fetch immediately on focus and show
   window.addEventListener('pageshow', async () => {
-    if (window.Store && typeof Store.syncWithFirebase === 'function') {
-      await Store.syncWithFirebase();
-      Store.getQuiz(1);
-    }
     await loadCoursesFromCloud();
   });
   window.addEventListener('focus', async () => {
-    if (window.Store && typeof Store.syncWithFirebase === 'function') {
-      await Store.syncWithFirebase();
-      Store.getQuiz(1);
-      renderCourses();
-    }
+    await loadCoursesFromCloud();
   });
 
   document.getElementById('modal-close').addEventListener('click', closeVideoModal);

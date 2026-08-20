@@ -172,28 +172,33 @@ if (typeof firebase !== 'undefined') {
       }
     },
     async fetchQuizzes() {
-      let docs = await this._fetchCollection('quizzes', d => ({ id: d.id, firestoreId: d.id, ...d.data() }));
-      if (docs === null || docs.length === 0) {
-        const alt = await this._fetchCollection('quiz', d => ({ id: d.id, firestoreId: d.id, ...d.data() }));
-        if (alt && alt.length) docs = alt;
+      try {
+        let docs = await this._fetchCollection('quizzes', d => ({ id: d.id, firestoreId: d.id, ...d.data() }));
+        if (docs === null || docs.length === 0) {
+          const alt = await this._fetchCollection('quiz', d => ({ id: d.id, firestoreId: d.id, ...d.data() }));
+          if (alt && alt.length) docs = alt;
+        }
+        if (docs === null) return null;
+        const res = { 1: [], 2: [] };
+        docs.forEach(q => {
+          const y = Number(q.year) || 1;
+          if (!res[y]) res[y] = [];
+          res[y].push(q);
+        });
+        return res;
+      } catch (e) {
+        console.warn("Firestore fetchQuizzes error:", e);
+        return null;
       }
-      if (docs === null) return null;
-      const res = { 1: [], 2: [] };
-      docs.forEach(q => {
-        const y = Number(q.year) || 1;
-        if (!res[y]) res[y] = [];
-        res[y].push(q);
-      });
-      return res;
     },
     async saveQuizQuestion(question) {
       try {
         const cleanQ = {
           year: Number(question.year) || 1,
-          q_en: question.q_en || '',
-          q_fr: question.q_fr || '',
-          opts_en: question.opts_en || [],
-          opts_fr: question.opts_fr || [],
+          q_en: question.q_en || question.q_fr || '',
+          q_fr: question.q_fr || question.q_en || '',
+          opts_en: Array.isArray(question.opts_en) ? question.opts_en : [],
+          opts_fr: Array.isArray(question.opts_fr) ? question.opts_fr : [],
           correct: Number(question.correct) || 0
         };
         const docRef = await db.collection("quizzes").add(cleanQ);
@@ -206,8 +211,11 @@ if (typeof firebase !== 'undefined') {
     },
     async deleteQuizQuestion(id) {
       try {
-        if (id) await db.collection("quizzes").doc(id).delete();
-        console.log("Successfully deleted quiz question from Firestore:", id);
+        if (id) {
+          await db.collection("quizzes").doc(id).delete();
+          try { await db.collection("quiz").doc(id).delete(); } catch(err){}
+          console.log("Successfully deleted quiz question from Firestore:", id);
+        }
       } catch (e) {
         console.warn("Firestore deleteQuizQuestion:", e.message);
       }

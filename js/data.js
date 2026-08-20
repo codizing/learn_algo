@@ -9,8 +9,9 @@
    ========================================================================== */
 
 try {
-  ['csp_db_v1', 'csp_db_v2', 'csp_db_v3', 'csp_db_v4', 'csp_db_v5', 'csp_db'].forEach(k => {
+  ['csp_db_v1', 'csp_db_v2', 'csp_db_v3', 'csp_db_v4', 'csp_db_v5', 'csp_db', 'csp_session_db_v1', 'csp_session_db'].forEach(k => {
     try { localStorage.removeItem(k); } catch (err) {}
+    try { sessionStorage.removeItem(k); } catch (err) {}
   });
 } catch (e) {}
 
@@ -25,27 +26,28 @@ const SEED = {
 
 let memoryDB = structuredClone(SEED);
 
-const DB_SESSION_KEY = 'csp_session_db_v1';
-
 function loadDB() {
-  try {
-    const raw = sessionStorage.getItem(DB_SESSION_KEY);
-    if (raw) {
-      const db = JSON.parse(raw);
-      if (db && Array.isArray(db.courses)) {
-        return normalizeDB(db);
-      }
-    }
-  } catch (e) {}
   if (!memoryDB) memoryDB = structuredClone(SEED);
   return structuredClone(memoryDB);
 }
 
 function saveDB(db) {
   memoryDB = structuredClone(normalizeDB(db));
-  try {
-    sessionStorage.setItem(DB_SESSION_KEY, JSON.stringify(memoryDB));
-  } catch (e) {}
+}
+
+function normalizeQuizQuestion(q) {
+  if (!q || typeof q !== 'object') return null;
+  return {
+    ...q,
+    id: q.id || q.firestoreId || ('q_' + Math.random().toString(36).substr(2, 9)),
+    firestoreId: q.firestoreId || q.id || '',
+    year: Number(q.year) || 1,
+    q_en: q.q_en || q.q_fr || '',
+    q_fr: q.q_fr || q.q_en || '',
+    opts_en: Array.isArray(q.opts_en) ? q.opts_en : (Array.isArray(q.opts_fr) ? q.opts_fr : []),
+    opts_fr: Array.isArray(q.opts_fr) ? q.opts_fr : (Array.isArray(q.opts_en) ? q.opts_en : []),
+    correct: Number(q.correct) || 0
+  };
 }
 
 function normalizeCourse(c) {
@@ -193,8 +195,8 @@ const Store = {
 
         if (cloudQuizzes !== null) {
           db.quizzes = {
-            1: cloudQuizzes[1] || cloudQuizzes['1'] || [],
-            2: cloudQuizzes[2] || cloudQuizzes['2'] || []
+            1: ((cloudQuizzes[1] || cloudQuizzes['1']) || []).map(normalizeQuizQuestion).filter(Boolean),
+            2: ((cloudQuizzes[2] || cloudQuizzes['2']) || []).map(normalizeQuizQuestion).filter(Boolean)
           };
           updated = true;
         }
@@ -225,8 +227,8 @@ const Store = {
     withDbLock(() => {
       const db = loadDB();
       db.quizzes = {
-        1: (quizzes && (quizzes[1] || quizzes['1'])) || [],
-        2: (quizzes && (quizzes[2] || quizzes['2'])) || []
+        1: ((quizzes && (quizzes[1] || quizzes['1'])) || []).map(normalizeQuizQuestion).filter(Boolean),
+        2: ((quizzes && (quizzes[2] || quizzes['2'])) || []).map(normalizeQuizQuestion).filter(Boolean)
       };
       saveDB(db);
     }).then(() => notifyStoreUpdated());
@@ -275,32 +277,28 @@ const Store = {
     const db = loadDB();
     return db.courses || [];
   },
-  addCourse(course) {
+  async addCourse(course) {
     course.id = (course.type || 'c') + Date.now();
     if (!course.type) course.type = 'course';
     if (!course.pdfUrl_en) course.pdfUrl_en = course.pdfUrl || '';
     if (!course.pdfUrl_fr) course.pdfUrl_fr = course.pdfUrl || '';
-    return withDbLock(() => {
-      const db = loadDB();
-      db.courses.push(course);
-      saveDB(db);
-    }).then(async () => {
-      notifyStoreUpdated();
-      if (window.FB_Sync) {
-        const id = await window.FB_Sync.saveCourse(course);
-        if (id) {
-          await withDbLock(() => {
-            const db = loadDB();
-            const saved = db.courses.find(c => c.id === course.id);
-            if (saved) {
-              saved.firestoreId = id;
-              saveDB(db);
-            }
-          });
-        }
+
+    if (window.FB_Sync) {
+      const id = await window.FB_Sync.saveCourse(course);
+      if (id) {
+        course.firestoreId = id;
+        course.id = id;
       }
-      return course;
+    }
+
+    await withDbLock(() => {
+      const db = loadDB();
+      db.courses.push(normalizeCourse(course));
+      saveDB(db);
     });
+
+    notifyStoreUpdated();
+    return course;
   },
   updateCourse(id, patch) {
     withDbLock(() => {
@@ -312,10 +310,11 @@ const Store = {
       }
     }).then(() => notifyStoreUpdated());
   },
-  deleteCourse(id) {
-    return withDbLock(() => {
+  async deleteCourse(id) {
+    let target = null;
+    await withDbLock(() => {
       const db = loadDB();
-      const target = db.courses.find(c => c.id === id || c.firestoreId === id);
+      target = db.courses.find(c => c.id === id || c.firestoreId === id);
       db.courses = db.courses.filter(c => c.id !== id && c.firestoreId !== id);
       if (db.users) {
         db.users.forEach(u => {
@@ -325,75 +324,67 @@ const Store = {
         });
       }
       saveDB(db);
-      return target;
-    }).then(target => {
-      notifyStoreUpdated();
-      if (window.FB_Sync && target) {
-        const cloudId = target.firestoreId || target.id;
-        window.FB_Sync.deleteCourse(cloudId);
-      }
     });
+
+    notifyStoreUpdated();
+
+    if (window.FB_Sync && target) {
+      const cloudId = target.firestoreId || target.id;
+      await window.FB_Sync.deleteCourse(cloudId);
+    }
+    return target;
   },
   getQuiz(year) {
     const db = loadDB();
     const y = Number(year) || 1;
     if (!db || !db.quizzes) return [];
     const rawList = db.quizzes[y] || db.quizzes[String(y)] || [];
-    return (Array.isArray(rawList) ? rawList : []).map(q => ({
-      ...q,
-      id: q.id || q.firestoreId || ('q_' + Math.random()),
-      year: Number(q.year) || y,
-      q_en: q.q_en || q.q_fr || '',
-      q_fr: q.q_fr || q.q_en || '',
-      opts_en: Array.isArray(q.opts_en) ? q.opts_en : (Array.isArray(q.opts_fr) ? q.opts_fr : []),
-      opts_fr: Array.isArray(q.opts_fr) ? q.opts_fr : (Array.isArray(q.opts_en) ? q.opts_en : []),
-      correct: Number(q.correct) || 0
-    }));
+    return (Array.isArray(rawList) ? rawList : []).map(normalizeQuizQuestion).filter(Boolean);
   },
-  addQuestion(year, question) {
-    return withDbLock(() => {
+  async addQuestion(year, question) {
+    const y = Number(year) || 1;
+    question.id = 'q_' + Date.now();
+    question.year = y;
+
+    if (window.FB_Sync) {
+      const id = await window.FB_Sync.saveQuizQuestion(question);
+      if (id) {
+        question.firestoreId = id;
+        question.id = id;
+      }
+    }
+
+    await withDbLock(() => {
       const db = loadDB();
-      const y = Number(year) || 1;
       if (!db.quizzes) db.quizzes = { 1: [], 2: [] };
       if (!db.quizzes[y]) db.quizzes[y] = [];
-      question.id = 'q_' + Date.now();
-      question.year = y;
-      db.quizzes[y].push(question);
+      db.quizzes[y].push(normalizeQuizQuestion(question));
       saveDB(db);
-    }).then(async () => {
-      notifyStoreUpdated();
-      if (window.FB_Sync) {
-        const id = await window.FB_Sync.saveQuizQuestion(question);
-        if (id) {
-          await withDbLock(() => {
-            const db = loadDB();
-            const y = Number(year) || 1;
-            const saved = (db.quizzes[y] || []).find(q => q.id === question.id);
-            if (saved) {
-              saved.firestoreId = id;
-              saveDB(db);
-            }
-          });
-        }
-      }
-      return question;
     });
+
+    notifyStoreUpdated();
+    return question;
   },
-  deleteQuestion(year, questionId) {
-    return withDbLock(() => {
+  async deleteQuestion(year, questionId) {
+    const y = Number(year) || 1;
+    let target = null;
+    await withDbLock(() => {
       const db = loadDB();
-      const y = Number(year) || 1;
       const list = db.quizzes[y] || db.quizzes[String(y)] || [];
       const i = list.findIndex(q => q.id === questionId || q.firestoreId === questionId);
-      const removed = i > -1 ? list.splice(i, 1) : null;
-      saveDB(db);
-      return removed;
-    }).then(removed => {
-      notifyStoreUpdated();
-      if (window.FB_Sync && removed && removed[0]) {
-        window.FB_Sync.deleteQuizQuestion(removed[0].firestoreId || removed[0].id);
+      if (i > -1) {
+        target = list.splice(i, 1)[0];
       }
+      saveDB(db);
     });
+
+    notifyStoreUpdated();
+
+    if (window.FB_Sync && target) {
+      const cloudId = target.firestoreId || target.id;
+      await window.FB_Sync.deleteQuizQuestion(cloudId);
+    }
+    return target;
   },
   // ----- USERS & PROGRESS METHODS -----
   getUsers() {

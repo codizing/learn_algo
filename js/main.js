@@ -242,7 +242,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   }
 
   async function refreshHomeData() {
-    // Show counts from browser storage right away (works when opening files locally)
     updateHomeYearCounts();
 
     if (window.refreshCloudSync) {
@@ -251,8 +250,13 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       try { await window.cloudSyncReady; } catch (e) { /* logged in firebase.js */ }
     }
 
-    if (window.Store && !Store.getAllCourses().length && Store.fetchCoursesFromCloud) {
-      try { await Store.fetchCoursesFromCloud(); } catch (e) { console.warn('Home cloud fetch failed', e); }
+    if (window.Store) {
+      if (Store.fetchCoursesFromCloud) {
+        try { await Store.fetchCoursesFromCloud(); } catch (e) {}
+      }
+      if (Store.fetchQuizzesFromCloud) {
+        try { await Store.fetchQuizzesFromCloud(); } catch (e) {}
+      }
     }
 
     updateHomeYearCounts();
@@ -266,9 +270,8 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     window.addEventListener('pageshow', () => {
       refreshHomeData();
     });
-
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'csp_db_v5') updateHomeYearCounts();
+    window.addEventListener('focus', () => {
+      refreshHomeData();
     });
   }
 });

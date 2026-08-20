@@ -187,9 +187,11 @@ function renderQuiz(){
 }
 
 document.addEventListener('DOMContentLoaded', async ()=>{
+  let initialCloudSyncDone = false;
+
   async function loadQuizFromCloud() {
     const area = document.getElementById('quiz-area');
-    if (area && !quizState.questions.length && !quizState.started) {
+    if (area && !quizState.questions.length && !quizState.started && !initialCloudSyncDone) {
       const lang = getLang();
       area.innerHTML = `<div class="empty-state" style="padding:40px 20px;text-align:center;">${lang==='fr'?'Chargement des questions...':'Loading quiz questions...'}</div>`;
     }
@@ -200,15 +202,11 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       try { await window.cloudSyncReady; } catch (e) {}
     }
 
-    if (window.Store) {
-      if (Store.fetchCoursesFromCloud) {
-        try { await Store.fetchCoursesFromCloud(); } catch (e) {}
-      }
-      if (Store.fetchQuizzesFromCloud) {
-        try { await Store.fetchQuizzesFromCloud(); } catch (e) {}
-      }
+    if (window.Store && Store.fetchQuizzesFromCloud) {
+      try { await Store.fetchQuizzesFromCloud(); } catch (e) {}
     }
 
+    initialCloudSyncDone = true;
     if (!quizState.started) {
       initQuiz();
     }
@@ -236,11 +234,12 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   // 2. Fetch fresh from cloud and populate questions and counts
   await loadQuizFromCloud();
 
-  document.addEventListener('langchange', renderQuiz);
+  document.addEventListener('langchange', () => {
+    if (!quizState.started) initQuiz();
+    else renderQuiz();
+  });
   document.addEventListener('userchange', () => {
-    if (!quizState.started) {
-      initQuiz();
-    }
+    if (!quizState.started) initQuiz();
   });
   document.addEventListener('dbupdated', () => {
     updateCounts(getYearParam());
