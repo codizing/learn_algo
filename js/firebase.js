@@ -131,19 +131,11 @@ if (typeof firebase !== 'undefined') {
   window.FB_Sync = {
     async _fetchCollection(name, mapDoc) {
       try {
-        const snap = await db.collection(name).get({ source: 'server' });
+        const snap = await db.collection(name).get();
         return snap.docs.map(mapDoc);
       } catch (e) {
-        if (e.message && e.message.toLowerCase().includes('permission')) {
-          console.error(`🚨 Firebase Permission Error on collection '${name}': Check Firestore Security Rules in Firebase Console.`);
-        }
-        try {
-          const snap = await db.collection(name).get();
-          return snap.docs.map(mapDoc);
-        } catch (e2) {
-          console.warn(`Firestore fetch ${name}:`, e2.message);
-          return null;
-        }
+        console.warn(`Firestore fetch ${name}:`, e.message);
+        return null;
       }
     },
     async fetchCourses() {

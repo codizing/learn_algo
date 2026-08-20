@@ -43,7 +43,12 @@ function normalizeDB(db) {
     if (!c.pdfUrl_en && c.pdfUrl) c.pdfUrl_en = c.pdfUrl;
     if (!c.pdfUrl_fr && c.pdfUrl) c.pdfUrl_fr = c.pdfUrl;
   });
-  if (!db.quizzes || typeof db.quizzes !== 'object') db.quizzes = { 1: [], 2: [] };
+  if (!db.quizzes || typeof db.quizzes !== 'object') {
+    db.quizzes = { 1: [], 2: [] };
+  } else {
+    db.quizzes[1] = db.quizzes[1] || db.quizzes['1'] || [];
+    db.quizzes[2] = db.quizzes[2] || db.quizzes['2'] || [];
+  }
   if (!db.users || !Array.isArray(db.users)) db.users = [];
   return db;
 }
@@ -183,53 +188,45 @@ const Store = {
   },
   async _doSyncWithFirebase() {
     if (!window.FB_Sync) return false;
-    const attempts = 3;
-    for (let attempt = 0; attempt < attempts; attempt++) {
-      try {
-        const cloudCourses = await window.FB_Sync.fetchCourses();
-        const cloudQuizzes = await window.FB_Sync.fetchQuizzes();
-        const cloudUsers = await window.FB_Sync.fetchUsers();
-        const reachedCloud = cloudCourses !== null;
+    try {
+      const [cloudCourses, cloudQuizzes, cloudUsers] = await Promise.all([
+        window.FB_Sync.fetchCourses(),
+        window.FB_Sync.fetchQuizzes(),
+        window.FB_Sync.fetchUsers()
+      ]);
+      const reachedCloud = cloudCourses !== null || cloudQuizzes !== null;
 
-        // loadDB() happens INSIDE the lock, right before saving — never
-        // earlier — so this always writes on top of the latest state,
-        // even if the realtime listener or another poll just saved too.
-        await withDbLock(async () => {
-          const db = loadDB();
-          let updated = false;
+      await withDbLock(async () => {
+        const db = loadDB();
+        let updated = false;
 
-          // Firebase is the authoritative source of truth when fetch succeeds
-          if (cloudCourses !== null) {
-            db.courses = normalizeCourses(cloudCourses);
-            updated = true;
-          }
+        if (cloudCourses !== null) {
+          db.courses = normalizeCourses(cloudCourses);
+          updated = true;
+        }
 
-          if (cloudQuizzes !== null) {
-            db.quizzes = {
-              1: cloudQuizzes[1] || [],
-              2: cloudQuizzes[2] || []
-            };
-            updated = true;
-          }
+        if (cloudQuizzes !== null) {
+          db.quizzes = {
+            1: cloudQuizzes[1] || cloudQuizzes['1'] || [],
+            2: cloudQuizzes[2] || cloudQuizzes['2'] || []
+          };
+          updated = true;
+        }
 
-          if (cloudUsers !== null) {
-            db.users = cloudUsers;
-            updated = true;
-          }
+        if (cloudUsers !== null) {
+          db.users = cloudUsers;
+          updated = true;
+        }
 
-          if (updated) saveDB(db);
-        });
+        if (updated) saveDB(db);
+      });
 
-        notifyStoreUpdated();
-        // cloudCourses === null means every attempt to actually reach
-        // Firestore failed and we're just showing whatever was cached.
-        return reachedCloud;
-      } catch (e) {
-        console.warn("syncWithFirebase error:", e);
-      }
-      await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
+      notifyStoreUpdated();
+      return reachedCloud;
+    } catch (e) {
+      console.warn("syncWithFirebase error:", e);
+      return false;
     }
-    return false;
   },
   applyCloudCourses(courses) {
     withDbLock(() => {
@@ -346,7 +343,9 @@ const Store = {
   },
   getQuiz(year) {
     const db = loadDB();
-    return (db.quizzes[year] || []);
+    const y = Number(year) || 1;
+    if (!db.quizzes) return [];
+    return (db.quizzes[y] || db.quizzes[String(y)] || []);
   },
   addQuestion(year, question) {
     return withDbLock(() => {
