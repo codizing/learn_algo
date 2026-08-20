@@ -297,24 +297,33 @@ if (typeof firebase !== 'undefined') {
     }
   };
 
+  // refreshCloudSync is available for manual refresh (e.g. retry button)
+  // but we do NOT poll it automatically — onSnapshot handles live updates
   window.refreshCloudSync = async function() {
-    if (window.Store && typeof window.Store.syncWithFirebase === 'function') {
-      try {
-        return await window.Store.syncWithFirebase();
-      } catch (e) {
-        console.warn("refreshCloudSync error:", e);
-        return false;
+    // Always use fresh REST fetch so manual retries get current data
+    try {
+      const [courses, quizzes] = await Promise.all([
+        fetchFromFirestoreRest('courses'),
+        fetchFromFirestoreRest('quizzes')
+      ]);
+      if (courses !== null && window.Store && typeof Store.applyCloudCourses === 'function') {
+        Store.applyCloudCourses(courses);
       }
+      if (quizzes && window.Store && typeof Store.applyCloudQuizzes === 'function') {
+        const res = { 1: [], 2: [] };
+        quizzes.forEach(q => {
+          const y = Number(q.year) || 1;
+          if (!res[y]) res[y] = [];
+          res[y].push(q);
+        });
+        Store.applyCloudQuizzes(res);
+      }
+      return true;
+    } catch(e) {
+      console.warn('refreshCloudSync error:', e);
+      return false;
     }
-    return false;
   };
-
-  // Background poll every 15 seconds to keep data synchronized
-  setInterval(() => {
-    if (document.visibilityState === 'visible' && window.refreshCloudSync) {
-      window.refreshCloudSync();
-    }
-  }, 15000);
 
   function startRealtimeSync() {
     if (window.__cspRealtimeStarted) return;
@@ -368,11 +377,6 @@ if (typeof firebase !== 'undefined') {
     }
   }
 
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && window.refreshCloudSync) {
-      window.refreshCloudSync();
-    }
-  });
 
   // Primary initial load: fetch via REST immediately on DOMContentLoaded
   async function initialLoad() {

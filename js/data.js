@@ -283,21 +283,42 @@ const Store = {
     if (!course.pdfUrl_en) course.pdfUrl_en = course.pdfUrl || '';
     if (!course.pdfUrl_fr) course.pdfUrl_fr = course.pdfUrl || '';
 
-    if (window.FB_Sync) {
-      const id = await window.FB_Sync.saveCourse(course);
-      if (id) {
-        course.firestoreId = id;
-        course.id = id;
-      }
-    }
-
+    // 1. Add to local memory immediately so UI updates right away
     await withDbLock(() => {
       const db = loadDB();
       db.courses.push(normalizeCourse(course));
       saveDB(db);
     });
-
     notifyStoreUpdated();
+
+    // 2. Save to Firestore in background, then update the id and re-notify
+    if (window.FB_Sync) {
+      try {
+        const id = await window.FB_Sync.saveCourse(course);
+        if (id) {
+          course.firestoreId = id;
+          // Update the saved copy's id to the real Firestore id
+          await withDbLock(() => {
+            const db = loadDB();
+            const idx = db.courses.findIndex(c => c.id === course.id || c.id === ((course.type || 'c') + ''));
+            if (idx > -1) {
+              db.courses[idx].id = id;
+              db.courses[idx].firestoreId = id;
+            } else {
+              // If not found by temp id, just push the updated version
+              db.courses = db.courses.filter(c => c.id !== course.id);
+              db.courses.push(normalizeCourse({ ...course, id }));
+            }
+            saveDB(db);
+          });
+          course.id = id;
+          notifyStoreUpdated();
+        }
+      } catch (e) {
+        console.warn('addCourse Firestore save error:', e);
+      }
+    }
+
     return course;
   },
   updateCourse(id, patch) {
@@ -346,14 +367,7 @@ const Store = {
     question.id = 'q_' + Date.now();
     question.year = y;
 
-    if (window.FB_Sync) {
-      const id = await window.FB_Sync.saveQuizQuestion(question);
-      if (id) {
-        question.firestoreId = id;
-        question.id = id;
-      }
-    }
-
+    // 1. Add to local memory immediately so UI updates right away
     await withDbLock(() => {
       const db = loadDB();
       if (!db.quizzes) db.quizzes = { 1: [], 2: [] };
@@ -361,8 +375,32 @@ const Store = {
       db.quizzes[y].push(normalizeQuizQuestion(question));
       saveDB(db);
     });
-
     notifyStoreUpdated();
+
+    // 2. Save to Firestore in background, update id, re-notify
+    if (window.FB_Sync) {
+      try {
+        const id = await window.FB_Sync.saveQuizQuestion(question);
+        if (id) {
+          question.firestoreId = id;
+          await withDbLock(() => {
+            const db = loadDB();
+            const list = db.quizzes[y] || [];
+            const idx = list.findIndex(q => q.id === question.id);
+            if (idx > -1) {
+              list[idx].id = id;
+              list[idx].firestoreId = id;
+            }
+            saveDB(db);
+          });
+          question.id = id;
+          notifyStoreUpdated();
+        }
+      } catch (e) {
+        console.warn('addQuestion Firestore save error:', e);
+      }
+    }
+
     return question;
   },
   async deleteQuestion(year, questionId) {
