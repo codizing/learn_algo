@@ -304,6 +304,9 @@ if (typeof firebase !== 'undefined') {
     }, (err) => console.warn('users live sync:', err.message));
   }
 
+  // Start realtime live listeners immediately
+  startRealtimeSync();
+
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && window.refreshCloudSync) {
       window.refreshCloudSync();

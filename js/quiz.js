@@ -190,10 +190,15 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       try { sessionStorage.setItem('csp_active_year', y); } catch(err){}
       history.replaceState(null, '', `quiz.html?year=${y}`);
       initQuiz();
+      if (window.Store && typeof Store.syncWithFirebase === 'function') {
+        Store.syncWithFirebase().then(() => {
+          if (!quizState.started) initQuiz();
+        });
+      }
     });
   });
 
-  // 1. Render immediately from local cache so there is 0 latency/empty flicker
+  // 1. Render immediately from local cache
   initQuiz();
 
   // 2. Fetch fresh from Firebase Cloud in the background
@@ -226,6 +231,22 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     updateCounts(getYearParam());
     if (!quizState.started) {
       initQuiz();
+    }
+  });
+
+  // Refresh on tab focus / page show
+  window.addEventListener('pageshow', () => {
+    if (window.Store && typeof Store.syncWithFirebase === 'function') {
+      Store.syncWithFirebase().then(() => {
+        if (!quizState.started) initQuiz();
+      });
+    }
+  });
+  window.addEventListener('focus', () => {
+    if (window.Store && typeof Store.syncWithFirebase === 'function') {
+      Store.syncWithFirebase().then(() => {
+        if (!quizState.started) initQuiz();
+      });
     }
   });
 });

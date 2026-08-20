@@ -329,6 +329,9 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       try { sessionStorage.setItem('csp_active_year', currentYear); } catch(err){}
       history.replaceState(null, '', `courses.html?year=${currentYear}&tab=${activeTab}`);
       renderCourses();
+      if (window.Store && typeof Store.syncWithFirebase === 'function') {
+        Store.syncWithFirebase().then(() => renderCourses());
+      }
     });
   });
 
@@ -338,6 +341,9 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       activeTab = btn.dataset.tab;
       history.replaceState(null, '', `courses.html?year=${currentYear}&tab=${activeTab}`);
       renderCourses();
+      if (window.Store && typeof Store.syncWithFirebase === 'function') {
+        Store.syncWithFirebase().then(() => renderCourses());
+      }
     });
   });
 
@@ -352,10 +358,13 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 
   await loadCoursesFromCloud();
 
-  // Mobile Safari often restores a cached page — re-fetch courses when user comes back
-  window.addEventListener('pageshow', (e) => {
-    if (e.persisted || !Store.getAllCourses().length) {
-      loadCoursesFromCloud();
+  // Mobile browsers / back button: re-fetch immediately on focus and show
+  window.addEventListener('pageshow', () => {
+    loadCoursesFromCloud();
+  });
+  window.addEventListener('focus', () => {
+    if (window.Store && typeof Store.syncWithFirebase === 'function') {
+      Store.syncWithFirebase().then(() => renderCourses());
     }
   });
 
