@@ -187,6 +187,35 @@ function renderQuiz(){
 }
 
 document.addEventListener('DOMContentLoaded', async ()=>{
+  async function loadQuizFromCloud() {
+    const area = document.getElementById('quiz-area');
+    if (area && !quizState.questions.length && !quizState.started) {
+      const lang = getLang();
+      area.innerHTML = `<div class="empty-state" style="padding:40px 20px;text-align:center;">${lang==='fr'?'Chargement des questions...':'Loading quiz questions...'}</div>`;
+    }
+
+    if (window.refreshCloudSync) {
+      try { await window.refreshCloudSync(); } catch (e) {}
+    } else if (window.cloudSyncReady) {
+      try { await window.cloudSyncReady; } catch (e) {}
+    }
+
+    if (window.Store) {
+      if (Store.fetchCoursesFromCloud) {
+        try { await Store.fetchCoursesFromCloud(); } catch (e) {}
+      }
+      if (Store.fetchQuizzesFromCloud) {
+        try { await Store.fetchQuizzesFromCloud(); } catch (e) {}
+      }
+    }
+
+    if (!quizState.started) {
+      initQuiz();
+    }
+  }
+
+  window.refreshQuizFromCloud = loadQuizFromCloud;
+
   // Instant Year Switcher click listener in quiz
   document.querySelectorAll('#year-switcher a').forEach(a=>{
     const triggerYear = async (e)=>{
@@ -194,33 +223,18 @@ document.addEventListener('DOMContentLoaded', async ()=>{
       const y = Number(a.dataset.year) || 1;
       try { sessionStorage.setItem('csp_active_year', y); } catch(err){}
       history.replaceState(null, '', `quiz.html?year=${y}`);
-      if (window.Store && typeof Store.syncWithFirebase === 'function') {
-        await Store.syncWithFirebase();
-        Store.getQuiz(1);
-      }
-      if (!quizState.started) initQuiz();
+      initQuiz();
+      await loadQuizFromCloud();
     };
     a.addEventListener('click', triggerYear);
     a.addEventListener('touchstart', triggerYear, { passive: true });
   });
 
-  // 1. Cloud sync sequence on refresh / load
-  if (window.Store && typeof Store.syncWithFirebase === 'function') {
-    try {
-      await Store.syncWithFirebase();
-      Store.getQuiz(1);
-    } catch(e){}
-  } else if (window.refreshCloudSync) {
-    try {
-      await window.refreshCloudSync();
-      if (window.Store) {
-        Store.getQuiz(1);
-      }
-    } catch(e){}
-  }
-
-  // 2. Render fresh questions
+  // 1. Initial render from memory
   initQuiz();
+
+  // 2. Fetch fresh from cloud and populate questions and counts
+  await loadQuizFromCloud();
 
   document.addEventListener('langchange', renderQuiz);
   document.addEventListener('userchange', () => {
@@ -237,18 +251,10 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 
   // Refresh on tab focus / page show
   window.addEventListener('pageshow', async () => {
-    if (window.Store && typeof Store.syncWithFirebase === 'function') {
-      await Store.syncWithFirebase();
-      Store.getQuiz(1);
-      if (!quizState.started) initQuiz();
-    }
+    await loadQuizFromCloud();
   });
   window.addEventListener('focus', async () => {
-    if (window.Store && typeof Store.syncWithFirebase === 'function') {
-      await Store.syncWithFirebase();
-      Store.getQuiz(1);
-      if (!quizState.started) initQuiz();
-    }
+    await loadQuizFromCloud();
   });
 });
 

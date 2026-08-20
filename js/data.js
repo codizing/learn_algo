@@ -231,6 +231,13 @@ const Store = {
     this.applyCloudCourses(cloud);
     return normalizeCourses(cloud);
   },
+  async fetchQuizzesFromCloud() {
+    if (!window.FB_Sync) return { 1: [], 2: [] };
+    const cloud = await window.FB_Sync.fetchQuizzes();
+    if (cloud === null) return { 1: [], 2: [] };
+    this.applyCloudQuizzes(cloud);
+    return cloud;
+  },
   getYearStats(year) {
     return {
       courses: this.getCourses(year, 'course').length,
