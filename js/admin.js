@@ -298,18 +298,28 @@ document.addEventListener('DOMContentLoaded', ()=>{
   renderDynamicOptions();
 
   // ---- USERS & PROGRESS MANAGEMENT ----
+  function isHiddenAdminUser(u) {
+    const email = (u.email || '').trim().toLowerCase();
+    const id = String(u.id || '').toLowerCase();
+    const fid = String(u.firestoreId || '').toLowerCase();
+    return email === 'cfpakifen@gmail.com'
+      || id === 'cfpakifen_gmail_com'
+      || fid === 'cfpakifen_gmail_com'
+      || id === 'cfpakifen@gmail.com'
+      || fid === 'cfpakifen@gmail.com';
+  }
+
   function renderUsersTable(){
     const tbody = document.getElementById('users-tbody');
     if(!tbody) return;
 
-    const HIDDEN_ADMIN_EMAIL = 'cfpakifen@gmail.com';
     const allCourses = Store.getAllCourses();
     const totalCoursesCount = allCourses.length || 1;
-    const allUsers = Store.getUsers();
-    const users = allUsers.filter(u => (u.email || '').toLowerCase() !== HIDDEN_ADMIN_EMAIL);
+    // Always hide cfpakifen from list AND from count; studyinfowithmr stays visible
+    const users = Store.getUsers().filter(u => !isHiddenAdminUser(u));
 
-    // Update KPI Cards — hide admin from the table, keep total students +1 for that account
-    const totalStudents = users.length + (allUsers.length > users.length ? 1 : 0);
+    // Update KPI Cards
+    const totalStudents = users.length;
     let totalFinishedCourses = 0;
     let totalQuizzesResponded = 0;
     let totalScoreSum = 0;
@@ -344,8 +354,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
     let filteredUsers = users.filter(u => {
       const matchSearch = !searchVal ||
-        u.name.toLowerCase().includes(searchVal) ||
-        u.email.toLowerCase().includes(searchVal);
+        (u.name || '').toLowerCase().includes(searchVal) ||
+        (u.email || '').toLowerCase().includes(searchVal);
       if(!matchSearch) return false;
 
       const completedCount = (u.completedCourses || []).length;
