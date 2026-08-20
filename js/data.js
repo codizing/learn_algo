@@ -152,21 +152,40 @@ function mergeCourses(localList, cloudList) {
   return dedupeCourses(fromCloud.concat(keptLocal));
 }
 
+function quizFingerprint(q) {
+  return [Number(q.year) || 1, q.q_en || q.q_fr || '', (q.opts_en || []).join('|')].join('::');
+}
+
 function mergeQuizzes(localQ, cloudQ) {
+  // Same as mergeCourses: cloud snapshot wins so deletes propagate to other users.
+  // Keep only unsynced local questions that aren't already in the cloud list.
   const result = { 1: [], 2: [] };
   for (const y of [1, 2]) {
-    const map = new Map();
-    const put = (q) => {
-      const n = normalizeQuizQuestion(q);
-      if (!n) return;
-      const key = String(n.firestoreId || n.id);
-      if (tombstones.quizzes.has(key) || tombstones.quizzes.has(String(n.id))) return;
-      const prev = map.get(key);
-      if (!prev || (n.firestoreId && !prev.firestoreId)) map.set(key, n);
-    };
-    ((localQ && (localQ[y] || localQ[String(y)])) || []).forEach(put);
-    ((cloudQ && (cloudQ[y] || cloudQ[String(y)])) || []).forEach(put);
-    result[y] = Array.from(map.values());
+    const cloudNormalized = ((cloudQ && (cloudQ[y] || cloudQ[String(y)])) || [])
+      .map(normalizeQuizQuestion).filter(Boolean);
+    const cloudKeys = new Set();
+    cloudNormalized.forEach(q => {
+      cloudKeys.add(String(q.id));
+      if (q.firestoreId) cloudKeys.add(String(q.firestoreId));
+    });
+    const cloudPrints = new Set(cloudNormalized.map(quizFingerprint));
+
+    const fromCloud = cloudNormalized.filter(q => {
+      const key = String(q.firestoreId || q.id);
+      return !tombstones.quizzes.has(key) && !tombstones.quizzes.has(String(q.id));
+    });
+
+    const keptLocal = ((localQ && (localQ[y] || localQ[String(y)])) || [])
+      .map(normalizeQuizQuestion).filter(Boolean).filter(q => {
+        const key = String(q.firestoreId || q.id);
+        if (tombstones.quizzes.has(key) || tombstones.quizzes.has(String(q.id))) return false;
+        if (q.firestoreId) return false;
+        if (cloudKeys.has(String(q.id))) return false;
+        if (cloudPrints.has(quizFingerprint(q))) return false;
+        return true;
+      });
+
+    result[y] = fromCloud.concat(keptLocal);
   }
   return result;
 }
