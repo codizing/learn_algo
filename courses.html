@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Courses — Learn Algo with MR</title>
+  <link rel="stylesheet" href="css/styles.css?v=2.4">
+</head>
+
+<body>
+
+  <header class="site-header">
+    <nav class="nav">
+      <a href="index.html" class="brand"><span class="mark">&lt;/&gt;</span> Learn Algo with MR</a>
+      <button class="nav-toggle" aria-label="Menu">☰</button>
+      <ul class="nav-links">
+        <li><a href="index.html" data-i18n="nav_home">Home</a></li>
+        <li><a href="courses.html?year=1" data-i18n="nav_courses">Courses</a></li>
+        <li><a href="about.html" data-i18n="nav_about">About Us</a></li>
+        <li class="admin-only-nav" style="display:none;"><a href="admin.html" data-i18n="nav_admin">Admin</a></li>
+      </ul>
+      <div class="nav-right">
+        <div class="auth-box" id="auth-box"></div>
+        <div class="lang-toggle">
+          <button data-lang="en">EN</button>
+          <button data-lang="fr">FR</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="section" style="padding-top:48px;">
+      <div class="container">
+        <div class="level-switcher" id="year-switcher">
+          <a href="courses.html?year=1" data-year="1" class="active">• 1st Year</a>
+          <a href="courses.html?year=2" data-year="2">• 2nd Year</a>
+        </div>
+
+        <div class="eyebrow" data-i18n="courses_eyebrow">Academic Portal</div>
+        <h2 id="courses-title" data-i18n="courses_title">Materials & Resources</h2>
+        <p data-i18n="courses_lead" style="max-width:60ch; margin-bottom:28px;">Access lecture slides, TD exercise
+          sheets, past exams and self-check quizzes by year.</p>
+
+        <div class="category-menu" id="category-menu">
+          <button type="button" class="tab-btn active" data-tab="course" id="tab-course">
+            <span data-i18n="tab_courses">Courses</span>
+            <span class="count-pill" id="count-course">0</span>
+          </button>
+          <button type="button" class="tab-btn" data-tab="td" id="tab-td">
+            <span data-i18n="tab_td">TD (Exercises)</span>
+            <span class="count-pill" id="count-td">0</span>
+          </button>
+          <button type="button" class="tab-btn" data-tab="tp" id="tab-tp">
+            <span data-i18n="tab_tp">TP (Practical Labs)</span>
+            <span class="count-pill" id="count-tp">0</span>
+          </button>
+          <button type="button" class="tab-btn" data-tab="exam" id="tab-exam">
+            <span data-i18n="tab_exams">Exams</span>
+            <span class="count-pill" id="count-exam">0</span>
+          </button>
+          <a href="quiz.html?year=1" class="tab-btn" data-tab="quiz" id="tab-quiz">
+            <span data-i18n="tab_quiz">Quiz</span>
+            <span class="count-pill" id="count-quiz">0</span>
+          </a>
+        </div>
+
+        <div class="course-list" id="course-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <div class="brand"><span class="mark">&lt;/&gt;</span> Learn Algo with MR</div>
+      <div class="fmuted">© 2026 Learn Algo with MR. <span data-i18n="footer_rights">All rights reserved.</span></div>
+    </div>
+  </footer>
+
+  <!-- video modal -->
+  <div class="modal-backdrop" id="video-modal">
+    <div class="modal">
+      <div class="modal-head">
+        <strong id="modal-title">Video</strong>
+        <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="js/data.js?v=3.7"></script>
+  <script src="js/firebase.js?v=3.3"></script>
+  <script src="js/i18n.js?v=3.0"></script>
+  <script src="js/main.js?v=2.7"></script>
+  <script src="js/courses.js?v=3.7"></script>
+</body>
+
+</html>

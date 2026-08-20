@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Us — Learn Algo with MR</title>
+  <link rel="stylesheet" href="css/styles.css?v=2.5">
+</head>
+
+<body>
+
+  <header class="site-header">
+    <nav class="nav">
+      <a href="index.html" class="brand"><span class="mark">&lt;/&gt;</span> Learn Algo with MR</a>
+      <button class="nav-toggle" aria-label="Menu">☰</button>
+      <ul class="nav-links">
+        <li><a href="index.html" data-i18n="nav_home">Home</a></li>
+        <li><a href="courses.html?year=1" data-i18n="nav_courses">Courses</a></li>
+        <li><a href="about.html" class="active" data-i18n="nav_about">About Us</a></li>
+        <li class="admin-only-nav" style="display:none;"><a href="admin.html" data-i18n="nav_admin">Admin</a></li>
+      </ul>
+      <div class="nav-right">
+        <div class="auth-box" id="auth-box"></div>
+        <div class="lang-toggle">
+          <button data-lang="en">EN</button>
+          <button data-lang="fr">FR</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="section" style="padding-top:48px; padding-bottom:72px;">
+      <div class="container" style="max-width:980px;">
+
+        <!-- Main Header -->
+        <div style="text-align:center; max-width:780px; margin:0 auto 48px;">
+          <div class="eyebrow" style="justify-content:center; margin-bottom:12px;" data-i18n="about_platform_eyebrow">About the Platform</div>
+          <h1 style="font-size:clamp(28px, 4vw, 42px); line-height:1.2; margin-bottom:16px;">
+            <span data-i18n="about_title_prefix">About </span><span style="background:linear-gradient(135deg, var(--cyan), var(--violet)); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Learn Algo with MR</span>
+          </h1>
+          <p style="font-size:17px; color:var(--text); line-height:1.6; background:rgba(76,211,255,0.06); border:1px solid rgba(76,211,255,0.2); padding:16px 24px; border-radius:var(--radius-m); margin:0 auto;" data-i18n="about_hero_quote">
+            Built by a student, for students learning Algorithmique — because scattered PDFs in random group chats deserve better organization.
+          </p>
+        </div>
+
+        <!-- Mission & Story Grid -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:24px; margin-bottom:48px;">
+          
+          <!-- The Mission Card -->
+          <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-l); padding:32px; position:relative; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between;">
+            <div style="position:absolute; top:-30px; right:-30px; width:120px; height:120px; background:radial-gradient(circle, rgba(76,211,255,0.18), transparent 70%); pointer-events:none;"></div>
+            <div>
+              <div style="display:inline-flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:12px; color:var(--cyan); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:12px;">
+                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--cyan);"></span>
+                <span data-i18n="about_mission_eyebrow">The Mission</span>
+              </div>
+              <h2 style="font-size:22px; margin-bottom:16px; color:var(--text);" data-i18n="about_mission_title">One Organized Hub for CS Students</h2>
+              <p style="color:var(--text-muted); font-size:15px; line-height:1.7; margin-bottom:16px;" data-i18n="about_mission_p1">
+                Learn Algo with MR exists to give Computer Science students from L1 to L3 one organized place for everything related to Algorithmique — courses, TDs, TPs, exams, quizzes, and more.
+              </p>
+              <p style="color:var(--text-muted); font-size:15px; line-height:1.7; margin-bottom:0;" data-i18n="about_mission_p2">
+                No more digging through scattered Facebook groups, Telegram channels, or old conversations every time exam season comes around.
+              </p>
+            </div>
+            <div style="margin-top:20px; padding:12px 16px; background:var(--bg-elevated); border-left:3px solid var(--cyan); border-radius:var(--radius-s); font-size:14px; font-weight:600; color:var(--text);" data-i18n="about_mission_banner">
+              Everything you need, organized in one place.
+            </div>
+          </div>
+
+          <!-- The Story Card -->
+          <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-l); padding:32px; position:relative; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between;">
+            <div style="position:absolute; top:-30px; right:-30px; width:120px; height:120px; background:radial-gradient(circle, rgba(123,110,246,0.18), transparent 70%); pointer-events:none;"></div>
+            <div>
+              <div style="display:inline-flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:12px; color:var(--violet); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:12px;">
+                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--violet);"></span>
+                <span data-i18n="about_story_eyebrow">The Story</span>
+              </div>
+              <h2 style="font-size:22px; margin-bottom:16px; color:var(--text);" data-i18n="about_story_title">Born from Real Student Experience</h2>
+              <p style="color:var(--text-muted); font-size:14.5px; line-height:1.65; margin-bottom:12px;" data-i18n="about_story_p1">
+                Learn Algo with MR was created by a Computer Science student who experienced firsthand how difficult it can be to find, organize, and keep track of Algorithmique resources.
+              </p>
+              <p style="color:var(--text-muted); font-size:14.5px; line-height:1.65; margin-bottom:12px;" data-i18n="about_story_p2">
+                Between different PDFs, TDs shared across multiple groups, recorded lessons, and files saved somewhere you can never seem to find again, studying Algorithmique can quickly become more complicated than it needs to be.
+              </p>
+              <p style="color:var(--text-muted); font-size:14.5px; line-height:1.65; margin-bottom:0;" data-i18n="about_story_p3">
+                So I decided to build the platform I wished I had as a student — a simple, organized space where you can learn, practice, and keep track of your progress.
+              </p>
+            </div>
+            <div style="margin-top:20px; font-size:13.5px; color:var(--cyan); font-weight:500;" data-i18n="about_story_sharing">
+              And now, I'm sharing it with other students facing the same struggle.
+            </div>
+          </div>
+
+        </div>
+
+        <!-- What's Inside Section — 6 Distinct Feature Cards Grid -->
+        <div style="margin-bottom:48px;">
+          <div style="text-align:center; margin-bottom:28px;">
+            <div class="eyebrow" style="justify-content:center;" data-i18n="about_inside_eyebrow">Features & Materials</div>
+            <h2 style="font-size:26px;" data-i18n="about_inside_title">What's Inside?</h2>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:18px;">
+            
+            <!-- Card 1: Courses -->
+            <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:24px; display:flex; flex-direction:column; gap:12px; transition:transform .2s, border-color .2s;">
+              <div style="width:44px; height:44px; border-radius:10px; background:rgba(76,211,255,0.12); border:1px solid rgba(76,211,255,0.3); color:var(--cyan); display:flex; align-items:center; justify-content:center;">
+                <svg style="width:22px; height:22px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                  <polyline points="2 17 12 22 22 17"></polyline>
+                  <polyline points="2 12 12 17 22 12"></polyline>
+                </svg>
+              </div>
+              <div>
+                <h3 style="font-size:17px; margin-bottom:6px; color:var(--text);" data-i18n="card_courses_title">Structured Courses</h3>
+                <p style="font-size:14px; color:var(--text-muted); margin:0; line-height:1.5;" data-i18n="card_courses_desc">Learn chapter by chapter, from the basics to more advanced concepts.</p>
+              </div>
+            </div>
+
+            <!-- Card 2: TDs -->
+            <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:24px; display:flex; flex-direction:column; gap:12px; transition:transform .2s, border-color .2s;">
+              <div style="width:44px; height:44px; border-radius:10px; background:rgba(123,110,246,0.12); border:1px solid rgba(123,110,246,0.3); color:var(--violet); display:flex; align-items:center; justify-content:center;">
+                <svg style="width:22px; height:22px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 style="font-size:17px; margin-bottom:6px; color:var(--text);" data-i18n="card_td_title">TDs (Exercises)</h3>
+                <p style="font-size:14px; color:var(--text-muted); margin:0; line-height:1.5;" data-i18n="card_td_desc">Practice what you've learned with exercises and tutorial series.</p>
+              </div>
+            </div>
+
+            <!-- Card 3: TPs -->
+            <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:24px; display:flex; flex-direction:column; gap:12px; transition:transform .2s, border-color .2s;">
+              <div style="width:44px; height:44px; border-radius:10px; background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); color:#60a5fa; display:flex; align-items:center; justify-content:center;">
+                <svg style="width:22px; height:22px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="16 18 22 12 16 6"></polyline>
+                  <polyline points="8 6 2 12 8 18"></polyline>
+                  <line x1="10" y1="18" x2="14" y2="6"></line>
+                </svg>
+              </div>
+              <div>
+                <h3 style="font-size:17px; margin-bottom:6px; color:var(--text);" data-i18n="card_tp_title">TPs (Practical Labs)</h3>
+                <p style="font-size:14px; color:var(--text-muted); margin:0; line-height:1.5;" data-i18n="card_tp_desc">Hands-on coding, algorithm implementation and practical lab work.</p>
+              </div>
+            </div>
+
+            <!-- Card 4: Exams -->
+            <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:24px; display:flex; flex-direction:column; gap:12px; transition:transform .2s, border-color .2s;">
+              <div style="width:44px; height:44px; border-radius:10px; background:rgba(255,180,84,0.12); border:1px solid rgba(255,180,84,0.3); color:var(--amber); display:flex; align-items:center; justify-content:center;">
+                <svg style="width:22px; height:22px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+              </div>
+              <div>
+                <h3 style="font-size:17px; margin-bottom:6px; color:var(--text);" data-i18n="card_exams_title">Past Exams</h3>
+                <p style="font-size:14px; color:var(--text-muted); margin:0; line-height:1.5;" data-i18n="card_exams_desc">Prepare yourself with previous exams and their detailed corrections.</p>
+              </div>
+            </div>
+
+            <!-- Card 5: Quizzes -->
+            <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:24px; display:flex; flex-direction:column; gap:12px; transition:transform .2s, border-color .2s;">
+              <div style="width:44px; height:44px; border-radius:10px; background:rgba(74,222,128,0.12); border:1px solid rgba(74,222,128,0.3); color:var(--green); display:flex; align-items:center; justify-content:center;">
+                <svg style="width:22px; height:22px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+              </div>
+              <div>
+                <h3 style="font-size:17px; margin-bottom:6px; color:var(--text);" data-i18n="card_quizzes_title">Quizzes</h3>
+                <p style="font-size:14px; color:var(--text-muted); margin:0; line-height:1.5;" data-i18n="card_quizzes_desc">Test your understanding and identify what you still need to improve.</p>
+              </div>
+            </div>
+
+            <!-- Card 6: Progress Tracking -->
+            <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-m); padding:24px; display:flex; flex-direction:column; gap:12px; transition:transform .2s, border-color .2s;">
+              <div style="width:44px; height:44px; border-radius:10px; background:rgba(244,114,182,0.12); border:1px solid rgba(244,114,182,0.3); color:#f472b6; display:flex; align-items:center; justify-content:center;">
+                <svg style="width:22px; height:22px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="9" y1="3" x2="9" y2="21"></line>
+                  <line x1="9" y1="9" x2="21" y2="9"></line>
+                  <line x1="9" y1="15" x2="21" y2="15"></line>
+                </svg>
+              </div>
+              <div>
+                <h3 style="font-size:17px; margin-bottom:6px; color:var(--text);" data-i18n="card_progress_title">Progress Tracking</h3>
+                <p style="font-size:14px; color:var(--text-muted); margin:0; line-height:1.5;" data-i18n="card_progress_desc">Keep track of what you've completed and always know where you left off.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Why Learn Algo Quote Box -->
+        <div style="background:linear-gradient(135deg, rgba(76,211,255,0.08), rgba(123,110,246,0.08)); border:1px solid rgba(76,211,255,0.25); border-radius:var(--radius-l); padding:36px 30px; text-align:center; margin-bottom:48px; position:relative;">
+          <div class="eyebrow" style="justify-content:center; margin-bottom:10px;" data-i18n="about_why_eyebrow">The Philosophy</div>
+          <h2 style="font-size:24px; margin-bottom:20px; color:var(--text);" data-i18n="about_why_title">Why Learn Algo with MR?</h2>
+          <p style="font-size:16px; color:var(--text-muted); max-width:620px; margin:0 auto 12px; font-style:italic;" data-i18n="about_why_intro">
+            Because learning Algorithmique shouldn't start with:
+          </p>
+          <div style="font-family:var(--font-mono); font-size:15px; color:var(--red); margin-bottom:16px; background:rgba(251,113,133,0.1); border:1px dashed rgba(251,113,133,0.3); padding:8px 16px; display:inline-block; border-radius:var(--radius-s);" data-i18n="about_why_problem">
+            "Wait... where did I save that PDF?"
+          </div>
+          <p style="font-size:16px; color:var(--text-muted); max-width:620px; margin:0 auto 8px;" data-i18n="about_why_solution_label">
+            It should start with:
+          </p>
+          <div style="font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--cyan); text-shadow:0 0 20px rgba(76,211,255,0.4);" data-i18n="about_why_solution">
+            "Let's learn."
+          </div>
+        </div>
+
+        <!-- Get In Touch Section (with Profile Picture & Instagram Link) -->
+        <div style="background:var(--bg-surface); border:1px solid var(--border-strong); border-radius:var(--radius-l); padding:40px 30px; text-align:center; position:relative; overflow:hidden;">
+          <div style="position:absolute; top:-40px; right:-40px; width:150px; height:150px; background:radial-gradient(circle, rgba(225,48,108,0.12), transparent 70%); pointer-events:none;"></div>
+          
+          <!-- Avatar Profile Badge -->
+          <div style="width:90px; height:90px; margin:0 auto 18px; border-radius:50%; padding:3px; background:linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); box-shadow:0 8px 24px rgba(220,39,67,0.3);">
+            <div style="width:100%; height:100%; border-radius:50%; overflow:hidden; background:#9db7f8; display:flex; align-items:center; justify-content:center;">
+              <img src="img/profile.svg" alt="Study info with Mr" style="width:100%; height:100%; object-fit:cover;">
+            </div>
+          </div>
+
+          <div class="eyebrow" style="justify-content:center; margin-bottom:10px;" data-i18n="about_contact_eyebrow">Contact & Community</div>
+          <h2 style="font-size:26px; margin-bottom:14px; color:var(--text);" data-i18n="about_contact_title">Get in Touch</h2>
+          
+          <ul style="display:inline-block; text-align:left; color:var(--text-muted); font-size:14.5px; line-height:2; margin-bottom:24px; list-style:none; padding:0;">
+            <li style="display:flex; align-items:center; gap:10px;">
+              <span style="width:6px; height:6px; border-radius:50%; background:var(--cyan); display:inline-block;"></span>
+              <span data-i18n="about_contact_li1">Have a suggestion?</span>
+            </li>
+            <li style="display:flex; align-items:center; gap:10px;">
+              <span style="width:6px; height:6px; border-radius:50%; background:var(--violet); display:inline-block;"></span>
+              <span data-i18n="about_contact_li2">Found a broken link?</span>
+            </li>
+            <li style="display:flex; align-items:center; gap:10px;">
+              <span style="width:6px; height:6px; border-radius:50%; background:var(--amber); display:inline-block;"></span>
+              <span data-i18n="about_contact_li3">Want to contribute a chapter, TD, TP, or useful resource?</span>
+            </li>
+          </ul>
+
+          <p style="color:var(--text); font-weight:500; margin-bottom:24px; font-size:15px;" data-i18n="about_contact_sub">
+            I'd love to hear from you.
+          </p>
+
+          <!-- Contact Buttons (Instagram & Email) -->
+          <div style="display:flex; justify-content:center; align-items:center; gap:16px; flex-wrap:wrap;">
+            <!-- Instagram Link -->
+            <a href="https://www.instagram.com/studyyinfo?utm_source=ig_web_button_share_sheet&igsi=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener noreferrer" class="btn" style="background:linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color:#fff; font-weight:600; font-size:14.5px; padding:12px 24px; border-radius:999px; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 16px rgba(220,39,67,0.35); text-decoration:none; transition:transform .2s, box-shadow .2s;">
+              <svg style="width:18px; height:18px; fill:currentColor;" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+              </svg>
+              <span>@studyyinfo</span>
+            </a>
+
+            <!-- Email Link -->
+            <a href="mailto:studyinfowithmr@gmail.com" class="btn btn-ghost" style="font-size:14.5px; padding:12px 24px; border-radius:999px; display:inline-flex; align-items:center; gap:8px; border:1px solid var(--border-strong); background:var(--bg-elevated); color:var(--text); text-decoration:none;">
+              <svg style="width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;" viewBox="0 0 24 24">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+              <span>studyinfowithmr@gmail.com</span>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <div class="brand"><span class="mark">&lt;/&gt;</span> Learn Algo with MR</div>
+      <div class="fmuted">© 2026 Learn Algo with MR. <span data-i18n="footer_rights">All rights reserved.</span></div>
+    </div>
+  </footer>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="js/data.js?v=3.7"></script>
+  <script src="js/firebase.js?v=3.3"></script>
+  <script src="js/i18n.js?v=3.0"></script>
+  <script src="js/main.js?v=2.7"></script>
+</body>
+
+</html>

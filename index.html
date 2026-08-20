@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Learn Algo with MR</title>
+  <link rel="stylesheet" href="css/styles.css?v=2.3">
+</head>
+
+<body>
+
+  <header class="site-header">
+    <nav class="nav">
+      <a href="index.html" class="brand"><span class="mark">&lt;/&gt;</span> Learn Algo with MR</a>
+      <button class="nav-toggle" aria-label="Menu">☰</button>
+      <ul class="nav-links">
+        <li><a href="index.html" data-i18n="nav_home">Home</a></li>
+        <li><a href="courses.html?year=1" data-i18n="nav_courses">Courses</a></li>
+        <li><a href="about.html" data-i18n="nav_about">About Us</a></li>
+        <li class="admin-only-nav" style="display:none;"><a href="admin.html" data-i18n="nav_admin">Admin</a></li>
+      </ul>
+      <div class="nav-right">
+        <div class="auth-box" id="auth-box"></div>
+        <div class="lang-toggle">
+          <button data-lang="en">EN</button>
+          <button data-lang="fr">FR</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- HERO SECTION -->
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="eyebrow" data-i18n="hero_eyebrow">Computer Science Program</div>
+          <h1><span data-i18n="hero_title_a">Every course, every year,</span><br><span class="grad"
+              data-i18n="hero_title_b">one clear path.</span></h1>
+          <p class="lead" data-i18n="hero_lead">Browse CS course material, PDFs and lecture videos by year, then test
+            yourself with a short quiz — organized the way a real degree is.</p>
+          <div class="hero-actions">
+            <a href="courses.html?year=1" class="btn btn-primary" data-i18n="hero_cta_browse">Browse courses</a>
+            <a href="about.html" class="btn btn-ghost" data-i18n="hero_cta_about">About the program</a>
+          </div>
+        </div>
+
+        <div class="pathway">
+          <svg viewBox="0 0 460 410" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8" fill="#4cd3ff" />
+              </marker>
+              <marker id="arrow-red" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8" fill="#fb7185" />
+              </marker>
+            </defs>
+
+            <rect x="155" y="16" width="110" height="40" rx="6" fill="#0d1730" stroke="#4cd3ff" stroke-width="1.5" />
+            <text x="210" y="42" text-anchor="middle" style="fill:#0066ff !important"
+              font-family="'JetBrains Mono', monospace" font-size="13" font-weight="600" letter-spacing="1">START</text>
+
+            <path d="M210 56 L210 106" stroke="#4cd3ff" stroke-width="2" stroke-linecap="round" stroke-dasharray="6 8"
+              marker-end="url(#arrow)" />
+
+            <rect x="120" y="106" width="180" height="56" rx="6" fill="#0d1730" stroke="#4cd3ff" stroke-width="1.5" />
+            <text x="210" y="138" text-anchor="middle" style="fill:#0066ff !important"
+              font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="700">Choose a Course</text>
+
+            <path d="M210 162 L210 196" stroke="#4cd3ff" stroke-width="2" stroke-linecap="round" stroke-dasharray="6 8"
+              marker-end="url(#arrow)" />
+
+            <polygon points="210,200 300,262 210,324 120,262" fill="#0d1730" stroke="#4cd3ff" stroke-width="1.5" />
+            <text x="210" y="256" text-anchor="middle" style="fill:#0066ff !important"
+              font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="700">Quiz</text>
+            <text x="210" y="275" text-anchor="middle" style="fill:#0066ff !important"
+              font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="700">passed?</text>
+
+            <path d="M210 324 L210 364" stroke="#4cd3ff" stroke-width="2" stroke-linecap="round" stroke-dasharray="6 8"
+              marker-end="url(#arrow)" />
+            <text x="224" y="348" style="fill:#a99bff !important" font-family="'JetBrains Mono', monospace"
+              font-size="12" font-weight="700">YES</text>
+
+            <path d="M120 262 C 40 262, 40 134, 118 134" stroke="#fb7185" stroke-width="2" stroke-linecap="round"
+              stroke-dasharray="6 8" fill="none" marker-end="url(#arrow-red)" />
+            <text x="0" y="220" style="fill:#ff9aa6 !important" font-family="'JetBrains Mono', monospace"
+              font-size="12" font-weight="700" transform="rotate(-90 30 200)">NO — retry</text>
+
+            <rect x="140" y="364" width="140" height="46" rx="23" fill="#0d1730" stroke="#4cd3ff" stroke-width="1.5" />
+            <text x="210" y="392" text-anchor="middle" style="fill:#0066ff !important"
+              font-family="'JetBrains Mono', monospace" font-size="13" font-weight="600" letter-spacing="1">NEXT
+              Course</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow" data-i18n="years_eyebrow">Curriculum</div>
+            <h2 data-i18n="years_title">Choose your Level</h2>
+          </div>
+        </div>
+
+        <div class="year-grid" style="grid-template-columns:repeat(2,1fr); max-width:900px; margin:0 auto;">
+          <article class="year-card reveal" style="--glow:rgba(76,211,255,.18)">
+            <div class="num">• 1st Year</div>
+            <h3 data-i18n="y1_title">First Year</h3>
+            <p data-i18n="y1_desc">Introduction to algorithmic thinking, variables, conditions and loops.</p>
+            
+            <div class="hero-actions">
+              <a href="courses.html?year=1" class="btn btn-primary btn-sm" data-i18n="view_courses">View courses</a>
+              <a href="quiz.html?year=1" class="btn btn-ghost btn-sm" data-i18n="take_quiz">Take quiz</a>
+            </div>
+          </article>
+
+          <article class="year-card reveal" style="--glow:rgba(123,110,246,.18)">
+            <div class="num">• 2nd Year</div>
+            <h3 data-i18n="y2_title">Second Year</h3>
+            <p data-i18n="y2_desc">Arrays, functions, procedures and an introduction to recursion.</p>
+            
+            <div class="hero-actions">
+              <a href="courses.html?year=2" class="btn btn-primary btn-sm" data-i18n="view_courses">View courses</a>
+              <a href="quiz.html?year=2" class="btn btn-ghost btn-sm" data-i18n="take_quiz">Take quiz</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <div class="brand"><span class="mark">&lt;/&gt;</span> Learn Algo with MR</div>
+      <div class="fmuted">© 2026 Learn Algo with MR. <span data-i18n="footer_rights">All rights reserved.</span></div>
+    </div>
+  </footer>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="js/data.js?v=3.7"></script>
+  <script src="js/firebase.js?v=3.3"></script>
+  <script src="js/i18n.js?v=3.0"></script>
+  <script src="js/main.js?v=2.7"></script>
+</body>
+
+</html>

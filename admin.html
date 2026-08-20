@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Learn Algo with MR</title>
+  <link rel="stylesheet" href="css/styles.css?v=2.3">
+</head>
+
+<body>
+
+  <header class="site-header">
+    <nav class="nav">
+      <a href="index.html" class="brand"><span class="mark">&lt;/&gt;</span> Learn Algo with MR</a>
+      <button class="nav-toggle" aria-label="Menu">☰</button>
+      <ul class="nav-links">
+        <li><a href="index.html" data-i18n="nav_home">Home</a></li>
+        <li><a href="courses.html?year=1" data-i18n="nav_courses">Courses</a></li>
+        <li><a href="about.html" data-i18n="nav_about">About Us</a></li>
+        <li class="admin-only-nav" style="display:none;"><a href="admin.html" data-i18n="nav_admin">Admin</a></li>
+      </ul>
+      <div class="nav-right">
+        <div class="auth-box" id="auth-box"></div>
+        <div class="lang-toggle">
+          <button data-lang="en">EN</button>
+          <button data-lang="fr">FR</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="section" style="padding-top:48px;">
+      <div class="container">
+        <div class="eyebrow" data-i18n="admin_eyebrow">Staff only</div>
+        <h2 data-i18n="admin_title">Admin panel</h2>
+        <div class="notice" data-i18n="admin_notice">Changes here save to this browser and are what students see on the
+          Courses and Quiz pages.</div>
+
+        <!-- Admin Access Gate (Shown when not authenticated as studyinfowithmr@gmail.com) -->
+        <div id="admin-auth-gate" style="display:none;max-width:540px;margin:30px auto;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-l);padding:36px;text-align:center;">
+          <div style="width:54px;height:54px;border-radius:50%;background:rgba(76,211,255,0.12);border:1px solid rgba(76,211,255,0.3);color:var(--cyan);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 16px;">
+            🔒
+          </div>
+          <h3 style="font-size:20px;margin-bottom:8px;">Admin Access Required</h3>
+          <p style="font-size:14px;color:var(--text-faint);margin-bottom:24px;line-height:1.5;">
+            Only the administrator account (<strong>studyinfowithmr@gmail.com</strong>) has permission to access this management dashboard.
+          </p>
+          <button class="btn btn-primary" id="admin-gate-login-btn" style="width:100%;justify-content:center;padding:11px 18px;">
+            <svg style="width:18px;height:18px;margin-right:8px;" viewBox="0 0 24 24">
+              <path fill="#fff" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+              <path fill="#fff" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>
+              <path fill="#fff" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+              <path fill="#fff" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+            </svg>
+            <span>Sign In with Admin Google Account</span>
+          </button>
+        </div>
+
+        <div class="admin-shell">
+          <aside class="admin-side">
+            <a href="#" class="item active" data-panel="courses" data-i18n="admin_nav_courses">Manage courses</a>
+            <a href="#" class="item" data-panel="quiz" data-i18n="admin_nav_quiz">Manage quiz</a>
+            <a href="#" class="item" data-panel="users" data-i18n="admin_nav_users">Students & Progress</a>
+            <a href="#" class="item" data-panel="reset" data-i18n="admin_nav_reset">Reset demo data</a>
+          </aside>
+
+          <div class="admin-main">
+
+            <!-- ===== COURSES / RESOURCES PANEL ===== -->
+            <div id="panel-courses">
+              <h3 data-i18n="admin_add_course">Add a resource</h3>
+              <form id="course-form">
+                <div class="form-grid">
+                  <div class="form-row">
+                    <label data-i18n="field_type">Type / Category</label>
+                    <select name="type" required>
+                      <option value="course">Course</option>
+                      <option value="td">TD (Exercises)</option>
+                      <option value="tp">TP (Practical Labs)</option>
+                      <option value="exam">Exam</option>
+                    </select>
+                  </div>
+                  <div class="form-row">
+                    <label data-i18n="field_year">Year</label>
+                    <select name="year" required>
+                      <option value="1">Year 1</option>
+                      <option value="2">Year 2</option>
+                    </select>
+                  </div>
+                  <div class="form-row">
+                    <label data-i18n="field_code">Code / ID</label>
+                    <input name="code" placeholder="CS101 / TD-1 / EX-2024" required>
+                  </div>
+                  <div class="form-row">
+                    <label data-i18n="field_title_en">Title (English)</label>
+                    <input name="title_en" placeholder="e.g. Algorithms & Data Structures">
+                  </div>
+                  <div class="form-row">
+                    <label data-i18n="field_title_fr">Title (French)</label>
+                    <input name="title_fr" placeholder="ex. Algorithmes et Structures de Données">
+                  </div>
+                  <div class="form-row" style="grid-column:1/-1;">
+                    <label data-i18n="field_desc_en">Description (English)</label>
+                    <textarea name="desc_en" rows="2"></textarea>
+                  </div>
+                  <div class="form-row" style="grid-column:1/-1;">
+                    <label data-i18n="field_desc_fr">Description (French)</label>
+                    <textarea name="desc_fr" rows="2"></textarea>
+                  </div>
+                  <div class="form-row">
+                    <label data-i18n="field_pdf_en">PDF link (English)</label>
+                    <input name="pdfUrl_en" type="url" placeholder="https://…/lecture_en.pdf">
+                  </div>
+                  <div class="form-row">
+                    <label data-i18n="field_pdf_fr">PDF link (French)</label>
+                    <input name="pdfUrl_fr" type="url" placeholder="https://…/lecture_fr.pdf">
+                  </div>
+                  <div class="form-row" style="grid-column:1/-1;">
+                    <label data-i18n="field_video">Video link (URL, YouTube, Google Drive)</label>
+                    <input name="videoUrl" type="url" placeholder="https://drive.google.com/file/d/... or YouTube">
+                  </div>
+                </div>
+                <button class="btn btn-primary" type="submit" data-i18n="save_course">Save resource</button>
+              </form>
+
+              <div class="table-responsive">
+                <table class="admin-table" id="course-table">
+                  <thead>
+                    <tr>
+                      <th data-i18n="table_type">Type</th>
+                      <th data-i18n="table_code">Code</th>
+                      <th data-i18n="table_title">Title</th>
+                      <th data-i18n="table_year">Year</th>
+                      <th data-i18n="table_actions">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="course-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- ===== QUIZ PANEL ===== -->
+            <div id="panel-quiz" style="display:none;">
+              <h3 data-i18n="admin_add_question">Add a quiz question</h3>
+              <form id="question-form">
+                <div class="form-grid" style="margin-bottom:18px;">
+                  <div class="form-row">
+                    <label data-i18n="field_qyear">Applies to year</label>
+                    <select name="year" required>
+                      <option value="1">Year 1</option>
+                      <option value="2">Year 2</option>
+                    </select>
+                  </div>
+                  <div class="form-row">
+                    <label data-i18n="field_correct">Correct option</label>
+                    <select name="correct" id="quiz-correct-select" required>
+                      <!-- populated dynamically based on options -->
+                    </select>
+                  </div>
+                  <div class="form-row" style="grid-column:1/-1;">
+                    <label data-i18n="field_q_en">Question (English)</label>
+                    <input name="q_en" placeholder="e.g. What is the time complexity of quicksort?">
+                  </div>
+                  <div class="form-row" style="grid-column:1/-1;">
+                    <label data-i18n="field_q_fr">Question (French)</label>
+                    <input name="q_fr" placeholder="ex. Quelle est la complexité temporelle du tri rapide ?">
+                  </div>
+                </div>
+
+                <!-- Dynamic Answer Options Section -->
+                <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:20px;margin-bottom:20px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+                    <div>
+                      <h4 style="margin:0;font-size:15px;font-weight:600;" data-i18n="options_title">Answer Options / Choices</h4>
+                      <p style="font-size:12px;color:var(--text-faint);margin:2px 0 0;">Add choices (A, B, C...) and select which one is the correct answer.</p>
+                    </div>
+                    <button type="button" class="btn btn-ghost btn-sm" id="add-option-btn" style="border:1px dashed var(--cyan);color:var(--cyan);">
+                      <span data-i18n="add_option">+ Add Option</span>
+                    </button>
+                  </div>
+
+                  <div id="dynamic-options-list" style="display:flex;flex-direction:column;gap:14px;">
+                    <!-- Option items rendered by admin.js -->
+                  </div>
+                </div>
+
+                <button class="btn btn-primary" type="submit" data-i18n="save_question">Save question</button>
+              </form>
+
+              <div class="table-responsive">
+                <table class="admin-table" id="quiz-table">
+                  <thead>
+                    <tr>
+                      <th data-i18n="field_qyear">Applies to year</th>
+                      <th data-i18n="field_q_en">Question (English)</th>
+                      <th data-i18n="table_actions">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="quiz-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- ===== STUDENTS & PROGRESS PANEL ===== -->
+            <div id="panel-users" style="display:none;">
+              <div style="margin-bottom:20px;">
+                <h3 data-i18n="admin_users_title" style="margin-bottom:4px;">Students & Learning Progress</h3>
+                <p style="font-size:13px;color:var(--text-faint);margin:0;" data-i18n="admin_users_sub">Monitor student course completions and quiz performance in real-time.</p>
+              </div>
+
+              <!-- Stat KPI Cards -->
+              <div class="user-stats-grid">
+                <div class="user-kpi-card">
+                  <div class="kpi-num" id="kpi-total-students">0</div>
+                  <div class="kpi-label" data-i18n="stat_total_students">Total Students</div>
+                </div>
+                <div class="user-kpi-card">
+                  <div class="kpi-num" id="kpi-courses-completed">0</div>
+                  <div class="kpi-label" data-i18n="stat_courses_completed">Courses Finished</div>
+                </div>
+                <div class="user-kpi-card">
+                  <div class="kpi-num" id="kpi-quizzes-taken">0</div>
+                  <div class="kpi-label" data-i18n="stat_quizzes_taken">Quizzes Responded</div>
+                </div>
+                <div class="user-kpi-card">
+                  <div class="kpi-num" id="kpi-avg-score">0%</div>
+                  <div class="kpi-label" data-i18n="stat_avg_score">Average Quiz Score</div>
+                </div>
+              </div>
+
+              <!-- Search & Filter Bar -->
+              <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+                <input type="text" id="student-search-input" placeholder="Search by student name or email..." style="flex:1;min-width:240px;padding:9px 12px;font-size:13px;background:var(--bg-elevated);border:1px solid var(--border-strong);border-radius:var(--radius-s);color:var(--text);" data-i18n-ph="search_student_ph">
+                <select id="student-filter-select" style="padding:9px 12px;font-size:13px;background:var(--bg-elevated);border:1px solid var(--border-strong);border-radius:var(--radius-s);color:var(--text);">
+                  <option value="all" data-i18n="filter_all">All Students</option>
+                  <option value="completed" data-i18n="filter_active">Active Progress (>0)</option>
+                  <option value="none" data-i18n="filter_not_started">Not Started (0)</option>
+                </select>
+              </div>
+
+              <!-- Students Progress Table wrapped in responsive scroll container -->
+              <div class="table-responsive">
+                <table class="admin-table" id="users-table">
+                  <thead>
+                    <tr>
+                      <th data-i18n="table_student">Student</th>
+                      <th data-i18n="table_courses_finished">Courses Finished</th>
+                      <th data-i18n="table_quizzes_responded">Quizzes Responded</th>
+                      <th data-i18n="table_status">Status</th>
+                      <th data-i18n="table_actions">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="users-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- ===== RESET PANEL ===== -->
+            <div id="panel-reset" style="display:none;">
+              <h3 data-i18n="admin_nav_reset">Reset demo data</h3>
+              <p>This clears everything added here and restores the original demo courses, quiz questions and student test data.</p>
+              <button class="btn btn-danger" id="reset-btn" data-i18n="admin_nav_reset">Reset demo data</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Student Details Modal -->
+  <div class="modal-backdrop" id="user-details-modal">
+    <div class="modal" style="max-width:700px;">
+      <div class="modal-head">
+        <strong id="user-modal-title" data-i18n="user_details_title">Student Details & History</strong>
+        <button class="modal-close" id="user-modal-close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" id="user-modal-body" style="padding:16px 20px;background:var(--bg-surface);overflow-y:auto;max-height:75vh;"></div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <div class="brand"><span class="mark">&lt;/&gt;</span> Learn Algo with MR</div>
+      <div class="fmuted">© 2026 Learn Algo with MR. <span data-i18n="footer_rights">All rights reserved.</span></div>
+    </div>
+  </footer>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="js/data.js?v=3.7"></script>
+  <script src="js/firebase.js?v=3.3"></script>
+  <script src="js/i18n.js?v=3.0"></script>
+  <script src="js/main.js?v=2.7"></script>
+  <script src="js/admin.js?v=2.7"></script>
+</body>
+
+</html>

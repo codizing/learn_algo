@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz — Learn Algo with MR</title>
+  <link rel="stylesheet" href="css/styles.css?v=2.3">
+</head>
+
+<body>
+
+  <header class="site-header">
+    <nav class="nav">
+      <a href="index.html" class="brand"><span class="mark">&lt;/&gt;</span> Learn Algo with MR</a>
+      <button class="nav-toggle" aria-label="Menu">☰</button>
+      <ul class="nav-links">
+        <li><a href="index.html" data-i18n="nav_home">Home</a></li>
+        <li><a href="courses.html?year=1" data-i18n="nav_courses">Courses</a></li>
+        <li><a href="about.html" data-i18n="nav_about">About Us</a></li>
+        <li class="admin-only-nav" style="display:none;"><a href="admin.html" data-i18n="nav_admin">Admin</a></li>
+      </ul>
+      <div class="nav-right">
+        <div class="auth-box" id="auth-box"></div>
+        <div class="lang-toggle">
+          <button data-lang="en">EN</button>
+          <button data-lang="fr">FR</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="section" style="padding-top:48px;">
+      <div class="container">
+        <div class="level-switcher" id="year-switcher">
+          <a href="quiz.html?year=1" data-year="1" class="active">• 1st Year</a>
+          <a href="quiz.html?year=2" data-year="2">• 2nd Year</a>
+        </div>
+
+        <div class="eyebrow" data-i18n="quiz_eyebrow">Self-check</div>
+        <h2 id="quiz-heading" data-i18n="quiz_title">Quiz</h2>
+
+        <div class="category-menu" id="category-menu">
+          <a href="courses.html?year=1&tab=course" class="tab-btn" id="link-courses">
+            <span data-i18n="tab_courses">Courses</span>
+            <span class="count-pill" id="count-course">0</span>
+          </a>
+          <a href="courses.html?year=1&tab=td" class="tab-btn" id="link-td">
+            <span data-i18n="tab_td">TD (Exercises)</span>
+            <span class="count-pill" id="count-td">0</span>
+          </a>
+          <a href="courses.html?year=1&tab=tp" class="tab-btn" id="link-tp">
+            <span data-i18n="tab_tp">TP (Practical Labs)</span>
+            <span class="count-pill" id="count-tp">0</span>
+          </a>
+          <a href="courses.html?year=1&tab=exam" class="tab-btn" id="link-exams">
+            <span data-i18n="tab_exams">Exams</span>
+            <span class="count-pill" id="count-exam">0</span>
+          </a>
+          <a href="quiz.html?year=1" class="tab-btn active" id="link-quiz">
+            <span data-i18n="tab_quiz">Quiz</span>
+            <span class="count-pill" id="count-quiz">0</span>
+          </a>
+        </div>
+
+        <div class="quiz-shell">
+          <div class="quiz-progress">
+            <div class="quiz-progress-bar" id="progress-bar" style="width:0%"></div>
+          </div>
+          <div id="quiz-area"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <div class="brand"><span class="mark">&lt;/&gt;</span> Learn Algo with MR</div>
+      <div class="fmuted">© 2026 Learn Algo with MR. <span data-i18n="footer_rights">All rights reserved.</span></div>
+    </div>
+  </footer>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="js/data.js?v=3.7"></script>
+  <script src="js/firebase.js?v=3.3"></script>
+  <script src="js/i18n.js?v=3.0"></script>
+  <script src="js/main.js?v=2.7"></script>
+  <script src="js/quiz.js?v=3.1"></script>
+</body>
+
+</html>
