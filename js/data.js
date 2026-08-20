@@ -122,18 +122,34 @@ function normalizeCourses(list) {
 }
 
 function mergeCourses(localList, cloudList) {
-  const map = new Map();
-  const put = (c) => {
-    const n = normalizeCourse(c);
-    if (!n) return;
-    const key = String(n.firestoreId || n.id);
-    if (tombstones.courses.has(key) || tombstones.courses.has(String(n.id))) return;
-    const prev = map.get(key);
-    if (!prev || (n.firestoreId && !prev.firestoreId)) map.set(key, n);
-  };
-  (localList || []).forEach(put);
-  (cloudList || []).forEach(put);
-  return dedupeCourses(Array.from(map.values()));
+  // Cloud snapshot is the source of truth for synced resources. Starting from
+  // local+cloud (old behavior) meant deletes never propagated to other users:
+  // the removed doc stayed in their localStorage forever. Keep only unsynced
+  // local courses (no firestoreId) that aren't already represented in cloud.
+  const cloudNormalized = (cloudList || []).map(normalizeCourse).filter(Boolean);
+  const cloudKeys = new Set();
+  cloudNormalized.forEach(c => {
+    cloudKeys.add(String(c.id));
+    if (c.firestoreId) cloudKeys.add(String(c.firestoreId));
+  });
+  const cloudPrints = new Set(cloudNormalized.map(courseFingerprint));
+
+  const fromCloud = cloudNormalized.filter(c => {
+    const key = String(c.firestoreId || c.id);
+    return !tombstones.courses.has(key) && !tombstones.courses.has(String(c.id));
+  });
+
+  const keptLocal = (localList || []).map(normalizeCourse).filter(Boolean).filter(c => {
+    const key = String(c.firestoreId || c.id);
+    if (tombstones.courses.has(key) || tombstones.courses.has(String(c.id))) return false;
+    // Synced (or previously synced) — drop; cloud list already has it or it was deleted
+    if (c.firestoreId) return false;
+    if (cloudKeys.has(String(c.id))) return false;
+    if (cloudPrints.has(courseFingerprint(c))) return false;
+    return true;
+  });
+
+  return dedupeCourses(fromCloud.concat(keptLocal));
 }
 
 function mergeQuizzes(localQ, cloudQ) {
