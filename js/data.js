@@ -25,9 +25,27 @@ const SEED = {
 
 let memoryDB = structuredClone(SEED);
 
+const DB_SESSION_KEY = 'csp_session_db_v1';
+
 function loadDB() {
+  try {
+    const raw = sessionStorage.getItem(DB_SESSION_KEY);
+    if (raw) {
+      const db = JSON.parse(raw);
+      if (db && Array.isArray(db.courses)) {
+        return normalizeDB(db);
+      }
+    }
+  } catch (e) {}
   if (!memoryDB) memoryDB = structuredClone(SEED);
   return structuredClone(memoryDB);
+}
+
+function saveDB(db) {
+  memoryDB = structuredClone(normalizeDB(db));
+  try {
+    sessionStorage.setItem(DB_SESSION_KEY, JSON.stringify(memoryDB));
+  } catch (e) {}
 }
 
 function normalizeCourse(c) {
@@ -68,10 +86,6 @@ function normalizeDB(db) {
   }
   if (!db.users || !Array.isArray(db.users)) db.users = [];
   return db;
-}
-
-function saveDB(db) {
-  memoryDB = structuredClone(normalizeDB(db));
 }
 
 function notifyStoreUpdated() {

@@ -172,7 +172,11 @@ if (typeof firebase !== 'undefined') {
       }
     },
     async fetchQuizzes() {
-      const docs = await this._fetchCollection('quizzes', d => ({ id: d.id, firestoreId: d.id, ...d.data() }));
+      let docs = await this._fetchCollection('quizzes', d => ({ id: d.id, firestoreId: d.id, ...d.data() }));
+      if (docs === null || docs.length === 0) {
+        const alt = await this._fetchCollection('quiz', d => ({ id: d.id, firestoreId: d.id, ...d.data() }));
+        if (alt && alt.length) docs = alt;
+      }
       if (docs === null) return null;
       const res = { 1: [], 2: [] };
       docs.forEach(q => {
