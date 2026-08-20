@@ -134,6 +134,9 @@ if (typeof firebase !== 'undefined') {
         const snap = await db.collection(name).get({ source: 'server' });
         return snap.docs.map(mapDoc);
       } catch (e) {
+        if (e.message && e.message.toLowerCase().includes('permission')) {
+          console.error(`🚨 Firebase Permission Error on collection '${name}': Check Firestore Security Rules in Firebase Console.`);
+        }
         try {
           const snap = await db.collection(name).get();
           return snap.docs.map(mapDoc);

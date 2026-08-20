@@ -198,7 +198,7 @@ const Store = {
           const db = loadDB();
           let updated = false;
 
-          // Firebase is the source of truth when fetch succeeds (even if empty [])
+          // Firebase is the authoritative source of truth when fetch succeeds
           if (cloudCourses !== null) {
             db.courses = normalizeCourses(cloudCourses);
             updated = true;
@@ -212,25 +212,9 @@ const Store = {
             updated = true;
           }
 
-          if (cloudUsers !== null && cloudUsers.length) {
+          if (cloudUsers !== null) {
             db.users = cloudUsers;
             updated = true;
-          }
-
-          // Offline only: upload items that were never saved to Firebase
-          if (cloudCourses === null) {
-            const hasUnsynced = db.courses.some(c => !c.firestoreId)
-              || [1, 2].some(y => (db.quizzes[y] || []).some(q => !q.firestoreId));
-            if (hasUnsynced) {
-              const pushed = await this.pushUnsyncedToCloud(db);
-              if (pushed) updated = true;
-            }
-          } else if (cloudCourses.length === 0) {
-            const hasUnsynced = db.courses.some(c => !c.firestoreId);
-            if (hasUnsynced) {
-              const pushed = await this.pushUnsyncedToCloud(db);
-              if (pushed) updated = true;
-            }
           }
 
           if (updated) saveDB(db);
@@ -341,12 +325,12 @@ const Store = {
   deleteCourse(id) {
     return withDbLock(() => {
       const db = loadDB();
-      const target = db.courses.find(c => c.id === id);
-      db.courses = db.courses.filter(c => c.id !== id);
+      const target = db.courses.find(c => c.id === id || c.firestoreId === id);
+      db.courses = db.courses.filter(c => c.id !== id && c.firestoreId !== id);
       if (db.users) {
         db.users.forEach(u => {
           if (u.completedCourses) {
-            u.completedCourses = u.completedCourses.filter(cid => cid !== id);
+            u.completedCourses = u.completedCourses.filter(cid => cid !== id && (!target || cid !== target.firestoreId));
           }
         });
       }
