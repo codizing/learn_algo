@@ -128,18 +128,58 @@ if (typeof firebase !== 'undefined') {
     }
   };
 
+  function parseFirestoreRestDoc(doc) {
+    if (!doc || !doc.fields) return null;
+    const fields = doc.fields || {};
+    const id = doc.name ? doc.name.split('/').pop() : '';
+    const obj = { id, firestoreId: id };
+    for (const k in fields) {
+      const val = fields[k];
+      if (val.stringValue !== undefined) obj[k] = val.stringValue;
+      else if (val.integerValue !== undefined) obj[k] = Number(val.integerValue);
+      else if (val.booleanValue !== undefined) obj[k] = val.booleanValue;
+      else if (val.arrayValue !== undefined) {
+        obj[k] = ((val.arrayValue && val.arrayValue.values) || []).map(v => (v.stringValue !== undefined ? v.stringValue : (v.integerValue !== undefined ? Number(v.integerValue) : v)));
+      }
+    }
+    return obj;
+  }
+
+  async function fetchFromFirestoreRest(name) {
+    try {
+      const r = await fetch(`https://firestore.googleapis.com/v1/projects/website-570e4/databases/(default)/documents/${name}?t=${Date.now()}`);
+      if (!r.ok) return null;
+      const data = await r.json();
+      return (data.documents || []).map(parseFirestoreRestDoc).filter(Boolean);
+    } catch (e) {
+      console.warn(`REST fallback ${name} error:`, e);
+      return null;
+    }
+  }
+
   window.FB_Sync = {
     async _fetchCollection(name, mapDoc) {
+      // 1. Try Firebase SDK with a 3.5s timeout
       try {
-        const snap = await db.collection(name).get();
-        return snap.docs.map(mapDoc);
+        const sdkPromise = db.collection(name).get();
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3500));
+        const snap = await Promise.race([sdkPromise, timeoutPromise]);
+        if (snap && snap.docs && snap.docs.length > 0) {
+          return snap.docs.map(mapDoc);
+        }
       } catch (e) {
-        console.warn(`Firestore fetch ${name}:`, e.message);
-        return null;
+        console.warn(`SDK fetch ${name} timed out or failed, falling back to REST:`, e.message);
       }
+
+      // 2. Direct HTTP REST API fallback (never fails or hangs on any network)
+      const restDocs = await fetchFromFirestoreRest(name);
+      if (restDocs !== null && restDocs.length > 0) {
+        return restDocs;
+      }
+      return [];
     },
     async fetchCourses() {
-      return this._fetchCollection('courses', d => ({ id: d.id, firestoreId: d.id, ...d.data() }));
+      return this._fetchCollection('courses', d => ({ ...d.data(), id: d.id, firestoreId: d.id }));
     },
     async saveCourse(course) {
       try {
@@ -173,12 +213,12 @@ if (typeof firebase !== 'undefined') {
     },
     async fetchQuizzes() {
       try {
-        let docs = await this._fetchCollection('quizzes', d => ({ id: d.id, firestoreId: d.id, ...d.data() }));
+        let docs = await this._fetchCollection('quizzes', d => ({ ...d.data(), id: d.id, firestoreId: d.id }));
         if (docs === null || docs.length === 0) {
-          const alt = await this._fetchCollection('quiz', d => ({ id: d.id, firestoreId: d.id, ...d.data() }));
+          const alt = await this._fetchCollection('quiz', d => ({ ...d.data(), id: d.id, firestoreId: d.id }));
           if (alt && alt.length) docs = alt;
         }
-        if (docs === null) return null;
+        if (!docs) docs = [];
         const res = { 1: [], 2: [] };
         docs.forEach(q => {
           const y = Number(q.year) || 1;
@@ -188,7 +228,7 @@ if (typeof firebase !== 'undefined') {
         return res;
       } catch (e) {
         console.warn("Firestore fetchQuizzes error:", e);
-        return null;
+        return { 1: [], 2: [] };
       }
     },
     async saveQuizQuestion(question) {
@@ -221,7 +261,7 @@ if (typeof firebase !== 'undefined') {
       }
     },
     async fetchUsers() {
-      return this._fetchCollection('users', d => ({ id: d.id, firestoreId: d.id, ...d.data() }));
+      return this._fetchCollection('users', d => ({ ...d.data(), id: d.id, firestoreId: d.id }));
     },
     async saveUser(user) {
       try {
@@ -280,32 +320,52 @@ if (typeof firebase !== 'undefined') {
     if (!window.Store || window.__cspRealtimeStarted) return;
     window.__cspRealtimeStarted = true;
 
-    db.collection('courses').onSnapshot((snap) => {
-      const courses = snap.docs.map(d => ({ id: d.id, firestoreId: d.id, ...d.data() }));
-      if (typeof Store.applyCloudCourses === 'function') {
-        Store.applyCloudCourses(courses);
-      }
-    }, (err) => console.warn('courses live sync:', err.message));
-
-    db.collection('quizzes').onSnapshot((snap) => {
-      const res = { 1: [], 2: [] };
-      snap.docs.forEach(d => {
-        const q = { id: d.id, firestoreId: d.id, ...d.data() };
-        const y = Number(q.year) || 1;
-        if (!res[y]) res[y] = [];
-        res[y].push(q);
+    try {
+      db.collection('courses').onSnapshot((snap) => {
+        const courses = snap.docs.map(d => ({ ...d.data(), id: d.id, firestoreId: d.id }));
+        if (typeof Store.applyCloudCourses === 'function') {
+          Store.applyCloudCourses(courses);
+        }
+      }, async (err) => {
+        console.warn('courses live sync fallback:', err.message);
+        const list = await fetchFromFirestoreRest('courses');
+        if (list && typeof Store.applyCloudCourses === 'function') Store.applyCloudCourses(list);
       });
-      if (typeof Store.applyCloudQuizzes === 'function') {
-        Store.applyCloudQuizzes(res);
-      }
-    }, (err) => console.warn('quizzes live sync:', err.message));
 
-    db.collection('users').onSnapshot((snap) => {
-      const users = snap.docs.map(d => ({ id: d.id, firestoreId: d.id, ...d.data() }));
-      if (typeof Store.applyCloudUsers === 'function') {
-        Store.applyCloudUsers(users);
-      }
-    }, (err) => console.warn('users live sync:', err.message));
+      db.collection('quizzes').onSnapshot((snap) => {
+        const res = { 1: [], 2: [] };
+        snap.docs.forEach(d => {
+          const q = { ...d.data(), id: d.id, firestoreId: d.id };
+          const y = Number(q.year) || 1;
+          if (!res[y]) res[y] = [];
+          res[y].push(q);
+        });
+        if (typeof Store.applyCloudQuizzes === 'function') {
+          Store.applyCloudQuizzes(res);
+        }
+      }, async (err) => {
+        console.warn('quizzes live sync fallback:', err.message);
+        const list = await fetchFromFirestoreRest('quizzes');
+        if (list && typeof Store.applyCloudQuizzes === 'function') {
+          const res = { 1: [], 2: [] };
+          list.forEach(q => {
+            const y = Number(q.year) || 1;
+            if (!res[y]) res[y] = [];
+            res[y].push(q);
+          });
+          Store.applyCloudQuizzes(res);
+        }
+      });
+
+      db.collection('users').onSnapshot((snap) => {
+        const users = snap.docs.map(d => ({ ...d.data(), id: d.id, firestoreId: d.id }));
+        if (typeof Store.applyCloudUsers === 'function') {
+          Store.applyCloudUsers(users);
+        }
+      }, (err) => console.warn('users live sync:', err.message));
+    } catch (e) {
+      console.warn("startRealtimeSync exception:", e);
+    }
   }
 
   // Start realtime live listeners immediately
