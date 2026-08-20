@@ -181,34 +181,102 @@ if (typeof firebase !== 'undefined') {
     async fetchCourses() {
       return this._fetchCollection('courses', d => ({ ...d.data(), id: d.id, firestoreId: d.id }));
     },
-    async saveCourse(course) {
+    async _getIdToken() {
       try {
-        const cleanCourse = {
-          type: course.type || 'course',
-          year: Number(course.year) || 1,
-          code: course.code || '',
-          title_en: course.title_en || '',
-          title_fr: course.title_fr || '',
-          desc_en: course.desc_en || '',
-          desc_fr: course.desc_fr || '',
-          pdfUrl_en: course.pdfUrl_en || '',
-          pdfUrl_fr: course.pdfUrl_fr || '',
-          videoUrl: course.videoUrl || ''
-        };
+        const user = auth.currentUser;
+        if (user) return await user.getIdToken();
+      } catch (e) {}
+      return null;
+    },
+    async _writeToFirestoreRest(collection, docData, docId) {
+      // Convert JS object to Firestore REST format
+      function toRestValue(val) {
+        if (val === null || val === undefined) return { nullValue: null };
+        if (typeof val === 'boolean') return { booleanValue: val };
+        if (typeof val === 'number') {
+          if (Number.isInteger(val)) return { integerValue: String(val) };
+          return { doubleValue: val };
+        }
+        if (typeof val === 'string') return { stringValue: val };
+        if (Array.isArray(val)) return { arrayValue: { values: val.map(toRestValue) } };
+        if (typeof val === 'object') {
+          const fields = {};
+          for (const k in val) fields[k] = toRestValue(val[k]);
+          return { mapValue: { fields } };
+        }
+        return { stringValue: String(val) };
+      }
+      const fields = {};
+      for (const k in docData) fields[k] = toRestValue(docData[k]);
+      const body = JSON.stringify({ fields });
+
+      const token = await this._getIdToken();
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const base = `https://firestore.googleapis.com/v1/projects/website-570e4/databases/(default)/documents/${collection}`;
+      const url = docId ? `${base}/${docId}?currentDocument.exists=false` : base;
+      const method = docId ? 'PATCH' : 'POST';
+
+      const r = await fetch(url, { method, headers, body });
+      if (!r.ok) {
+        const err = await r.json();
+        throw new Error(`Firestore REST write ${r.status}: ${JSON.stringify(err)}`);
+      }
+      const result = await r.json();
+      return result.name ? result.name.split('/').pop() : null;
+    },
+    async _deleteFromFirestoreRest(collection, docId) {
+      const token = await this._getIdToken();
+      const headers = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const url = `https://firestore.googleapis.com/v1/projects/website-570e4/databases/(default)/documents/${collection}/${docId}`;
+      await fetch(url, { method: 'DELETE', headers });
+    },
+    async saveCourse(course) {
+      const cleanCourse = {
+        type: course.type || 'course',
+        year: Number(course.year) || 1,
+        code: course.code || '',
+        title_en: course.title_en || '',
+        title_fr: course.title_fr || '',
+        desc_en: course.desc_en || '',
+        desc_fr: course.desc_fr || '',
+        pdfUrl_en: course.pdfUrl_en || '',
+        pdfUrl_fr: course.pdfUrl_fr || '',
+        videoUrl: course.videoUrl || ''
+      };
+      // Try SDK first (works when auth is established)
+      try {
         const docRef = await db.collection("courses").add(cleanCourse);
-        console.log("Successfully saved course to Firebase Firestore with ID:", docRef.id);
+        console.log("SDK saved course:", docRef.id);
         return docRef.id;
       } catch (e) {
-        console.error("Firestore saveCourse error:", e);
+        console.warn("SDK saveCourse failed, trying REST:", e.message);
+      }
+      // Fallback: REST API with ID token
+      try {
+        const id = await this._writeToFirestoreRest('courses', cleanCourse);
+        console.log("REST saved course:", id);
+        return id;
+      } catch (e) {
+        console.error("REST saveCourse also failed:", e.message);
         return null;
       }
     },
     async deleteCourse(id) {
       try {
         await db.collection("courses").doc(id).delete();
-        console.log("Successfully deleted course from Firebase Firestore:", id);
+        console.log("SDK deleted course:", id);
+        return;
       } catch (e) {
-        console.warn("Firestore deleteCourse:", e.message);
+        console.warn("SDK deleteCourse failed, trying REST:", e.message);
+      }
+      try {
+        await this._deleteFromFirestoreRest('courses', id);
+        console.log("REST deleted course:", id);
+      } catch (e) {
+        console.warn("REST deleteCourse also failed:", e.message);
       }
     },
     async fetchQuizzes() {
@@ -232,32 +300,45 @@ if (typeof firebase !== 'undefined') {
       }
     },
     async saveQuizQuestion(question) {
+      const cleanQ = {
+        year: Number(question.year) || 1,
+        q_en: question.q_en || question.q_fr || '',
+        q_fr: question.q_fr || question.q_en || '',
+        opts_en: Array.isArray(question.opts_en) ? question.opts_en : [],
+        opts_fr: Array.isArray(question.opts_fr) ? question.opts_fr : [],
+        correct: Number(question.correct) || 0
+      };
       try {
-        const cleanQ = {
-          year: Number(question.year) || 1,
-          q_en: question.q_en || question.q_fr || '',
-          q_fr: question.q_fr || question.q_en || '',
-          opts_en: Array.isArray(question.opts_en) ? question.opts_en : [],
-          opts_fr: Array.isArray(question.opts_fr) ? question.opts_fr : [],
-          correct: Number(question.correct) || 0
-        };
         const docRef = await db.collection("quizzes").add(cleanQ);
-        console.log("Successfully saved quiz question to Firestore with ID:", docRef.id);
+        console.log("SDK saved quiz question:", docRef.id);
         return docRef.id;
       } catch (e) {
-        console.error("Firestore saveQuizQuestion error:", e);
+        console.warn("SDK saveQuizQuestion failed, trying REST:", e.message);
+      }
+      try {
+        const id = await this._writeToFirestoreRest('quizzes', cleanQ);
+        console.log("REST saved quiz question:", id);
+        return id;
+      } catch (e) {
+        console.error("REST saveQuizQuestion also failed:", e.message);
         return null;
       }
     },
     async deleteQuizQuestion(id) {
+      if (!id) return;
       try {
-        if (id) {
-          await db.collection("quizzes").doc(id).delete();
-          try { await db.collection("quiz").doc(id).delete(); } catch(err){}
-          console.log("Successfully deleted quiz question from Firestore:", id);
-        }
+        await db.collection("quizzes").doc(id).delete();
+        try { await db.collection("quiz").doc(id).delete(); } catch(err){}
+        console.log("SDK deleted quiz question:", id);
+        return;
       } catch (e) {
-        console.warn("Firestore deleteQuizQuestion:", e.message);
+        console.warn("SDK deleteQuizQuestion failed, trying REST:", e.message);
+      }
+      try {
+        await this._deleteFromFirestoreRest('quizzes', id);
+        console.log("REST deleted quiz question:", id);
+      } catch (e) {
+        console.warn("REST deleteQuizQuestion also failed:", e.message);
       }
     },
     async fetchUsers() {
