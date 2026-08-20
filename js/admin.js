@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
   // ---- panel switching ----
   const items = document.querySelectorAll('.admin-side .item');
-  const panels = { courses:'panel-courses', quiz:'panel-quiz', users:'panel-users', reset:'panel-reset' };
+  const panels = { courses:'panel-courses', quiz:'panel-quiz', users:'panel-users' };
   items.forEach(item=>{
     item.addEventListener('click', (e)=>{
       e.preventDefault();
@@ -415,7 +415,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
               <button class="btn btn-sm btn-ghost view-user-btn" data-user-id="${u.id}" style="padding:4px 8px;font-size:12px;">${t('action_details')}</button>
               <button class="btn btn-sm btn-ghost reset-user-btn" data-user-id="${u.id}" title="${t('action_reset_progress')}" style="padding:4px 8px;font-size:12px;color:var(--amber);">↺</button>
-              <button class="btn btn-sm btn-danger del-user-btn" data-user-id="${u.id}" title="${t('action_delete')}" style="padding:4px 8px;font-size:12px;">✕</button>
             </div>
           </td>
         </tr>`;
@@ -432,16 +431,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
           Store.resetUserProgress(btn.dataset.userId);
           renderUsersTable();
           showToast(t('toast_user_reset'));
-        }
-      });
-    });
-
-    tbody.querySelectorAll('.del-user-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if(confirm(t('confirm_delete_user'))){
-          Store.deleteUser(btn.dataset.userId);
-          renderUsersTable();
-          showToast(t('toast_deleted'));
         }
       });
     });
@@ -547,20 +536,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
   const filterSelect = document.getElementById('student-filter-select');
   if(searchInput) searchInput.addEventListener('input', renderUsersTable);
   if(filterSelect) filterSelect.addEventListener('change', renderUsersTable);
-
-  // ---- reset ----
-  const resetBtn = document.getElementById('reset-btn');
-  if(resetBtn){
-    resetBtn.addEventListener('click', ()=>{
-      if(confirm(t('reset_confirm'))){
-        Store.resetAll();
-        renderCourseTable();
-        renderQuizTable();
-        renderUsersTable();
-        showToast(t('toast_reset'));
-      }
-    });
-  }
 
   // ---- ADMIN AUTHENTICATION GATE ----
   async function onAdminReady() {
