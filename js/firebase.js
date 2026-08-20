@@ -92,8 +92,19 @@ if (typeof firebase !== 'undefined') {
     }
   };
 
+  // Promise that resolves once Firebase Auth state is first known (user or null)
+  // This ensures writes wait for the real auth token before hitting Firestore
+  let _authReadyResolve;
+  const _authReady = new Promise(resolve => { _authReadyResolve = resolve; });
+
   // Sync with Firestore whenever user signs in or out
   auth.onAuthStateChanged(async (firebaseUser) => {
+    // Resolve auth-ready promise on first call (even if firebaseUser is null)
+    if (_authReadyResolve) {
+      _authReadyResolve(firebaseUser);
+      _authReadyResolve = null;
+    }
+
     if (firebaseUser) {
       const cleanEmail = (firebaseUser.email || '').toLowerCase().replace(/[^a-zA-Z0-9]/g, '_');
       const authData = {
@@ -102,6 +113,11 @@ if (typeof firebase !== 'undefined') {
         initials: (firebaseUser.displayName ? firebaseUser.displayName.charAt(0) : firebaseUser.email.charAt(0)).toUpperCase(),
         photoURL: firebaseUser.photoURL || ''
       };
+      // Update our custom auth store so getAuthUser() reflects Firebase user
+      if (window.setAuthUser && !window.getAuthUser()) {
+        // Only auto-set if not already set (don't override manual logout)
+        localStorage.setItem('csp_user', JSON.stringify(authData));
+      }
       try {
         await db.collection("users").doc(cleanEmail).set({
           id: cleanEmail,
@@ -183,9 +199,19 @@ if (typeof firebase !== 'undefined') {
     },
     async _getIdToken() {
       try {
+        // Wait up to 5s for Firebase Auth to restore session before giving up
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 5000));
+        await Promise.race([_authReady, timeoutPromise]);
         const user = auth.currentUser;
-        if (user) return await user.getIdToken();
-      } catch (e) {}
+        if (user) {
+          const token = await user.getIdToken(true); // force refresh
+          console.log('Got Firebase ID token for user:', user.email);
+          return token;
+        }
+        console.warn('_getIdToken: auth.currentUser is null after waiting');
+      } catch (e) {
+        console.warn('_getIdToken error:', e);
+      }
       return null;
     },
     async _writeToFirestoreRest(collection, docData, docId) {
