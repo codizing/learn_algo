@@ -617,15 +617,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     }
 
     renderCourseTable();
-    renderQuizTable();
-    renderUsersTable();
-  }
-
-  checkAdminAuth();
-  document.addEventListener('userchange', checkAdminAuth);
-
-  initAdminData();
-
+  // Register event listeners immediately
   document.addEventListener('dbupdated', ()=>{
     renderCourseTable();
     renderQuizTable();
@@ -638,4 +630,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
     renderUsersTable();
     renderDynamicOptions();
   });
+
+  document.addEventListener('userchange', checkAdminAuth);
+
+  checkAdminAuth();
+  initAdminData();
 });

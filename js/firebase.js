@@ -159,22 +159,22 @@ if (typeof firebase !== 'undefined') {
 
   window.FB_Sync = {
     async _fetchCollection(name, mapDoc) {
-      // 1. Try Firebase SDK with a 3.5s timeout
-      try {
-        const sdkPromise = db.collection(name).get();
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3500));
-        const snap = await Promise.race([sdkPromise, timeoutPromise]);
-        if (snap && snap.docs && snap.docs.length > 0) {
-          return snap.docs.map(mapDoc);
-        }
-      } catch (e) {
-        console.warn(`SDK fetch ${name} timed out or failed, falling back to REST:`, e.message);
-      }
-
-      // 2. Direct HTTP REST API fallback (never fails or hangs on any network)
+      // Always try REST first — it is the most reliable cross-device fetch
       const restDocs = await fetchFromFirestoreRest(name);
       if (restDocs !== null && restDocs.length > 0) {
         return restDocs;
+      }
+
+      // Fallback to Firebase SDK (slower, may hang)
+      try {
+        const sdkPromise = db.collection(name).get();
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
+        const snap = await Promise.race([sdkPromise, timeoutPromise]);
+        if (snap && snap.docs) {
+          return snap.docs.map(mapDoc);
+        }
+      } catch (e) {
+        console.warn(`SDK fetch ${name} failed:`, e.message);
       }
       return [];
     },
@@ -317,7 +317,7 @@ if (typeof firebase !== 'undefined') {
   }, 15000);
 
   function startRealtimeSync() {
-    if (!window.Store || window.__cspRealtimeStarted) return;
+    if (window.__cspRealtimeStarted) return;
     window.__cspRealtimeStarted = true;
 
     try {
@@ -368,19 +368,44 @@ if (typeof firebase !== 'undefined') {
     }
   }
 
-  // Start realtime live listeners immediately
-  startRealtimeSync();
-
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && window.refreshCloudSync) {
       window.refreshCloudSync();
     }
   });
 
+  // Primary initial load: fetch via REST immediately on DOMContentLoaded
+  async function initialLoad() {
+    try {
+      const [courses, quizzes] = await Promise.all([
+        fetchFromFirestoreRest('courses'),
+        fetchFromFirestoreRest('quizzes')
+      ]);
+
+      if (courses && courses.length && window.Store && typeof Store.applyCloudCourses === 'function') {
+        Store.applyCloudCourses(courses);
+      }
+
+      if (quizzes && window.Store && typeof Store.applyCloudQuizzes === 'function') {
+        const res = { 1: [], 2: [] };
+        quizzes.forEach(q => {
+          const y = Number(q.year) || 1;
+          if (!res[y]) res[y] = [];
+          res[y].push(q);
+        });
+        Store.applyCloudQuizzes(res);
+      }
+    } catch (e) {
+      console.warn('initialLoad REST error:', e);
+    }
+
+    // Then start SDK realtime listeners for live updates
+    startRealtimeSync();
+  }
+
   window.cloudSyncReady = new Promise((resolve) => {
     async function runSync() {
-      await window.refreshCloudSync();
-      startRealtimeSync();
+      await initialLoad();
       resolve();
     }
     if (document.readyState === 'loading') {
