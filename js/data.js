@@ -240,8 +240,8 @@ const Store = {
     withDbLock(() => {
       const db = loadDB();
       db.quizzes = {
-        1: quizzes[1] || [],
-        2: quizzes[2] || []
+        1: (quizzes && (quizzes[1] || quizzes['1'])) || [],
+        2: (quizzes && (quizzes[2] || quizzes['2'])) || []
       };
       saveDB(db);
     }).then(() => notifyStoreUpdated());
@@ -345,16 +345,28 @@ const Store = {
   getQuiz(year) {
     const db = loadDB();
     const y = Number(year) || 1;
-    if (!db.quizzes) return [];
-    return (db.quizzes[y] || db.quizzes[String(y)] || []);
+    if (!db || !db.quizzes) return [];
+    const rawList = db.quizzes[y] || db.quizzes[String(y)] || [];
+    return (Array.isArray(rawList) ? rawList : []).map(q => ({
+      ...q,
+      id: q.id || q.firestoreId || ('q_' + Math.random()),
+      year: Number(q.year) || y,
+      q_en: q.q_en || q.q_fr || '',
+      q_fr: q.q_fr || q.q_en || '',
+      opts_en: Array.isArray(q.opts_en) ? q.opts_en : (Array.isArray(q.opts_fr) ? q.opts_fr : []),
+      opts_fr: Array.isArray(q.opts_fr) ? q.opts_fr : (Array.isArray(q.opts_en) ? q.opts_en : []),
+      correct: Number(q.correct) || 0
+    }));
   },
   addQuestion(year, question) {
     return withDbLock(() => {
       const db = loadDB();
-      if (!db.quizzes[year]) db.quizzes[year] = [];
+      const y = Number(year) || 1;
+      if (!db.quizzes) db.quizzes = { 1: [], 2: [] };
+      if (!db.quizzes[y]) db.quizzes[y] = [];
       question.id = 'q_' + Date.now();
-      question.year = Number(year);
-      db.quizzes[year].push(question);
+      question.year = y;
+      db.quizzes[y].push(question);
       saveDB(db);
     }).then(async () => {
       notifyStoreUpdated();
@@ -363,7 +375,8 @@ const Store = {
         if (id) {
           await withDbLock(() => {
             const db = loadDB();
-            const saved = (db.quizzes[year] || []).find(q => q.id === question.id);
+            const y = Number(year) || 1;
+            const saved = (db.quizzes[y] || []).find(q => q.id === question.id);
             if (saved) {
               saved.firestoreId = id;
               saveDB(db);
@@ -377,8 +390,9 @@ const Store = {
   deleteQuestion(year, questionId) {
     return withDbLock(() => {
       const db = loadDB();
-      const list = db.quizzes[year] || [];
-      const i = list.findIndex(q => q.id === questionId);
+      const y = Number(year) || 1;
+      const list = db.quizzes[y] || db.quizzes[String(y)] || [];
+      const i = list.findIndex(q => q.id === questionId || q.firestoreId === questionId);
       const removed = i > -1 ? list.splice(i, 1) : null;
       saveDB(db);
       return removed;

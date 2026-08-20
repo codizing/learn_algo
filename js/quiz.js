@@ -138,8 +138,13 @@ function renderQuiz(){
   }
 
   const q = quizState.questions[quizState.index];
-  const qText = lang==='fr' ? q.q_fr : q.q_en;
-  const opts = lang==='fr' ? q.opts_fr : q.opts_en;
+  if (!q) {
+    quizState.index = 0;
+    renderQuiz();
+    return;
+  }
+  const qText = (lang==='fr' ? (q.q_fr || q.q_en) : (q.q_en || q.q_fr)) || 'Question';
+  const opts = (lang==='fr' ? (q.opts_fr || q.opts_en) : (q.opts_en || q.opts_fr)) || [];
   bar.style.width = `${(quizState.index/total)*100}%`;
   quizState.answered = false;
 
