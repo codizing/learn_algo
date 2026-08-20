@@ -8,12 +8,27 @@
    directly.
    ========================================================================== */
 
-const DB_KEY = 'csp_db_v5';
-let memoryDB = null;
-
 try {
-  localStorage.removeItem('csp_db_v4');
+  ['csp_db_v1', 'csp_db_v2', 'csp_db_v3', 'csp_db_v4', 'csp_db_v5', 'csp_db'].forEach(k => {
+    try { localStorage.removeItem(k); } catch (err) {}
+  });
 } catch (e) {}
+
+const SEED = {
+  courses: [],
+  quizzes: {
+    1: [],
+    2: []
+  },
+  users: []
+};
+
+let memoryDB = structuredClone(SEED);
+
+function loadDB() {
+  if (!memoryDB) memoryDB = structuredClone(SEED);
+  return structuredClone(memoryDB);
+}
 
 function normalizeCourse(c) {
   if (!c || typeof c !== 'object') return null;
@@ -39,6 +54,7 @@ function normalizeCourses(list) {
 }
 
 function normalizeDB(db) {
+  if (!db || typeof db !== 'object') db = structuredClone(SEED);
   db.courses = normalizeCourses(db.courses);
   db.courses.forEach(c => {
     if (!c.pdfUrl_en && c.pdfUrl) c.pdfUrl_en = c.pdfUrl;
@@ -54,53 +70,8 @@ function normalizeDB(db) {
   return db;
 }
 
-const SEED = {
-  courses: [],
-  quizzes: {
-    1: [],
-    2: []
-  },
-  users: []
-};
-
-function loadDB() {
-  try {
-    const raw = localStorage.getItem(DB_KEY);
-    if (!raw) {
-      if (memoryDB) return structuredClone(memoryDB);
-      const seed = structuredClone(SEED);
-      memoryDB = seed;
-      try { localStorage.setItem(DB_KEY, JSON.stringify(SEED)); } catch (e) { /* phone storage blocked */ }
-      return structuredClone(seed);
-    }
-    try {
-      const db = JSON.parse(raw);
-      if (!db.courses || !Array.isArray(db.courses)) {
-        const seed = structuredClone(SEED);
-        saveDB(seed);
-        return seed;
-      }
-      return normalizeDB(db);
-    }
-    catch (e) {
-      if (memoryDB) return structuredClone(memoryDB);
-      const seed = structuredClone(SEED);
-      saveDB(seed);
-      return seed;
-    }
-  } catch (e) {
-    if (memoryDB) return structuredClone(memoryDB);
-    memoryDB = structuredClone(SEED);
-    return structuredClone(SEED);
-  }
-}
 function saveDB(db) {
   memoryDB = structuredClone(normalizeDB(db));
-  try {
-    localStorage.setItem(DB_KEY, JSON.stringify(memoryDB));
-  } catch (e) {
-    console.warn('localStorage unavailable (common on mobile private mode) — using memory cache');
-  }
 }
 
 function notifyStoreUpdated() {
