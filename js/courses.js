@@ -323,54 +323,69 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 
   // Instant Year Switcher click listener
   document.querySelectorAll('#year-switcher a').forEach(a=>{
-    a.addEventListener('click', async (e)=>{
+    const triggerYear = async (e)=>{
       e.preventDefault();
       currentYear = Number(a.dataset.year) || 1;
       try { sessionStorage.setItem('csp_active_year', currentYear); } catch(err){}
       history.replaceState(null, '', `courses.html?year=${currentYear}&tab=${activeTab}`);
-      try { localStorage.removeItem('csp_db_v4'); } catch(err){}
       if (window.Store && typeof Store.syncWithFirebase === 'function') {
         await Store.syncWithFirebase();
+        Store.getQuiz(1);
       }
       renderCourses();
-    });
+    };
+    a.addEventListener('click', triggerYear);
+    a.addEventListener('touchstart', triggerYear, { passive: true });
   });
 
   // Setup tab click listeners (Courses, TD, TP, Exam)
   document.querySelectorAll('#category-menu button.tab-btn').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
+    const triggerTab = async ()=>{
       activeTab = btn.dataset.tab;
       history.replaceState(null, '', `courses.html?year=${currentYear}&tab=${activeTab}`);
-      try { localStorage.removeItem('csp_db_v4'); } catch(err){}
       if (window.Store && typeof Store.syncWithFirebase === 'function') {
         await Store.syncWithFirebase();
+        Store.getQuiz(1);
       }
       renderCourses();
-    });
+    };
+    btn.addEventListener('click', triggerTab);
+    btn.addEventListener('touchstart', triggerTab, { passive: true });
   });
 
   // Handle Quiz tab click to keep active year
   const quizTabLink = document.getElementById('tab-quiz');
   if (quizTabLink) {
-    quizTabLink.addEventListener('click', (e) => {
+    const triggerQuiz = async (e) => {
       e.preventDefault();
-      try { localStorage.removeItem('csp_db_v4'); } catch(err){}
+      if (window.Store && typeof Store.syncWithFirebase === 'function') {
+        await Store.syncWithFirebase();
+        Store.getQuiz(1);
+      }
       location.href = `quiz.html?year=${currentYear}`;
-    });
+    };
+    quizTabLink.addEventListener('click', triggerQuiz);
+    quizTabLink.addEventListener('touchstart', triggerQuiz, { passive: true });
   }
 
-  try { localStorage.removeItem('csp_db_v4'); } catch(err){}
+  if (window.Store && typeof Store.syncWithFirebase === 'function') {
+    await Store.syncWithFirebase();
+    Store.getQuiz(1);
+  }
   await loadCoursesFromCloud();
 
   // Mobile browsers / back button: re-fetch immediately on focus and show
   window.addEventListener('pageshow', async () => {
-    try { localStorage.removeItem('csp_db_v4'); } catch(err){}
+    if (window.Store && typeof Store.syncWithFirebase === 'function') {
+      await Store.syncWithFirebase();
+      Store.getQuiz(1);
+    }
     await loadCoursesFromCloud();
   });
   window.addEventListener('focus', async () => {
-    try { localStorage.removeItem('csp_db_v4'); } catch(err){}
     if (window.Store && typeof Store.syncWithFirebase === 'function') {
       await Store.syncWithFirebase();
+      Store.getQuiz(1);
       renderCourses();
     }
   });

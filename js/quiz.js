@@ -184,35 +184,32 @@ function renderQuiz(){
 document.addEventListener('DOMContentLoaded', async ()=>{
   // Instant Year Switcher click listener in quiz
   document.querySelectorAll('#year-switcher a').forEach(a=>{
-    a.addEventListener('click', async (e)=>{
+    const triggerYear = async (e)=>{
       e.preventDefault();
       const y = Number(a.dataset.year) || 1;
       try { sessionStorage.setItem('csp_active_year', y); } catch(err){}
       history.replaceState(null, '', `quiz.html?year=${y}`);
-      try { localStorage.removeItem('csp_db_v4'); } catch(err){}
       if (window.Store && typeof Store.syncWithFirebase === 'function') {
         await Store.syncWithFirebase();
         Store.getQuiz(1);
-        Store.getQuiz(2);
       }
       if (!quizState.started) initQuiz();
-    });
+    };
+    a.addEventListener('click', triggerYear);
+    a.addEventListener('touchstart', triggerYear, { passive: true });
   });
 
-  // 1. Storage wipe & cloud sync sequence
-  try { localStorage.removeItem('csp_db_v4'); } catch(e){}
+  // 1. Cloud sync sequence on refresh / load
   if (window.Store && typeof Store.syncWithFirebase === 'function') {
     try {
       await Store.syncWithFirebase();
       Store.getQuiz(1);
-      Store.getQuiz(2);
     } catch(e){}
   } else if (window.refreshCloudSync) {
     try {
       await window.refreshCloudSync();
       if (window.Store) {
         Store.getQuiz(1);
-        Store.getQuiz(2);
       }
     } catch(e){}
   }
@@ -235,20 +232,16 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 
   // Refresh on tab focus / page show
   window.addEventListener('pageshow', async () => {
-    try { localStorage.removeItem('csp_db_v4'); } catch(err){}
     if (window.Store && typeof Store.syncWithFirebase === 'function') {
       await Store.syncWithFirebase();
       Store.getQuiz(1);
-      Store.getQuiz(2);
       if (!quizState.started) initQuiz();
     }
   });
   window.addEventListener('focus', async () => {
-    try { localStorage.removeItem('csp_db_v4'); } catch(err){}
     if (window.Store && typeof Store.syncWithFirebase === 'function') {
       await Store.syncWithFirebase();
       Store.getQuiz(1);
-      Store.getQuiz(2);
       if (!quizState.started) initQuiz();
     }
   });
