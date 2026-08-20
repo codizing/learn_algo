@@ -184,42 +184,41 @@ function renderQuiz(){
 document.addEventListener('DOMContentLoaded', async ()=>{
   // Instant Year Switcher click listener in quiz
   document.querySelectorAll('#year-switcher a').forEach(a=>{
-    a.addEventListener('click', (e)=>{
+    a.addEventListener('click', async (e)=>{
       e.preventDefault();
       const y = Number(a.dataset.year) || 1;
       try { sessionStorage.setItem('csp_active_year', y); } catch(err){}
       history.replaceState(null, '', `quiz.html?year=${y}`);
-      initQuiz();
+      try { localStorage.removeItem('csp_db_v4'); } catch(err){}
       if (window.Store && typeof Store.syncWithFirebase === 'function') {
-        Store.syncWithFirebase().then(() => {
-          if (!quizState.started) initQuiz();
-        });
+        await Store.syncWithFirebase();
+        Store.getQuiz(1);
+        Store.getQuiz(2);
       }
+      if (!quizState.started) initQuiz();
     });
   });
 
-  // 1. Render immediately from local cache
-  initQuiz();
-
-  // 2. Fetch fresh from Firebase Cloud in the background
-  if (window.refreshCloudSync) {
-    try {
-      await window.refreshCloudSync();
-    } catch (e) {
-      console.warn('quiz.js: refreshCloudSync error', e);
-    }
-  } else if (window.Store && typeof Store.syncWithFirebase === 'function') {
+  // 1. Storage wipe & cloud sync sequence
+  try { localStorage.removeItem('csp_db_v4'); } catch(e){}
+  if (window.Store && typeof Store.syncWithFirebase === 'function') {
     try {
       await Store.syncWithFirebase();
-    } catch (e) {
-      console.warn('quiz.js: syncWithFirebase error', e);
-    }
+      Store.getQuiz(1);
+      Store.getQuiz(2);
+    } catch(e){}
+  } else if (window.refreshCloudSync) {
+    try {
+      await window.refreshCloudSync();
+      if (window.Store) {
+        Store.getQuiz(1);
+        Store.getQuiz(2);
+      }
+    } catch(e){}
   }
 
-  // 3. Re-render once cloud sync arrives if quiz hasn't been started yet
-  if (!quizState.started) {
-    initQuiz();
-  }
+  // 2. Render fresh questions
+  initQuiz();
 
   document.addEventListener('langchange', renderQuiz);
   document.addEventListener('userchange', () => {
@@ -235,18 +234,22 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   });
 
   // Refresh on tab focus / page show
-  window.addEventListener('pageshow', () => {
+  window.addEventListener('pageshow', async () => {
+    try { localStorage.removeItem('csp_db_v4'); } catch(err){}
     if (window.Store && typeof Store.syncWithFirebase === 'function') {
-      Store.syncWithFirebase().then(() => {
-        if (!quizState.started) initQuiz();
-      });
+      await Store.syncWithFirebase();
+      Store.getQuiz(1);
+      Store.getQuiz(2);
+      if (!quizState.started) initQuiz();
     }
   });
-  window.addEventListener('focus', () => {
+  window.addEventListener('focus', async () => {
+    try { localStorage.removeItem('csp_db_v4'); } catch(err){}
     if (window.Store && typeof Store.syncWithFirebase === 'function') {
-      Store.syncWithFirebase().then(() => {
-        if (!quizState.started) initQuiz();
-      });
+      await Store.syncWithFirebase();
+      Store.getQuiz(1);
+      Store.getQuiz(2);
+      if (!quizState.started) initQuiz();
     }
   });
 });

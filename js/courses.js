@@ -323,27 +323,29 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 
   // Instant Year Switcher click listener
   document.querySelectorAll('#year-switcher a').forEach(a=>{
-    a.addEventListener('click', (e)=>{
+    a.addEventListener('click', async (e)=>{
       e.preventDefault();
       currentYear = Number(a.dataset.year) || 1;
       try { sessionStorage.setItem('csp_active_year', currentYear); } catch(err){}
       history.replaceState(null, '', `courses.html?year=${currentYear}&tab=${activeTab}`);
-      renderCourses();
+      try { localStorage.removeItem('csp_db_v4'); } catch(err){}
       if (window.Store && typeof Store.syncWithFirebase === 'function') {
-        Store.syncWithFirebase().then(() => renderCourses());
+        await Store.syncWithFirebase();
       }
+      renderCourses();
     });
   });
 
-  // Setup tab click listeners
+  // Setup tab click listeners (Courses, TD, TP, Exam)
   document.querySelectorAll('#category-menu button.tab-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
+    btn.addEventListener('click', async ()=>{
       activeTab = btn.dataset.tab;
       history.replaceState(null, '', `courses.html?year=${currentYear}&tab=${activeTab}`);
-      renderCourses();
+      try { localStorage.removeItem('csp_db_v4'); } catch(err){}
       if (window.Store && typeof Store.syncWithFirebase === 'function') {
-        Store.syncWithFirebase().then(() => renderCourses());
+        await Store.syncWithFirebase();
       }
+      renderCourses();
     });
   });
 
@@ -352,19 +354,24 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   if (quizTabLink) {
     quizTabLink.addEventListener('click', (e) => {
       e.preventDefault();
+      try { localStorage.removeItem('csp_db_v4'); } catch(err){}
       location.href = `quiz.html?year=${currentYear}`;
     });
   }
 
+  try { localStorage.removeItem('csp_db_v4'); } catch(err){}
   await loadCoursesFromCloud();
 
   // Mobile browsers / back button: re-fetch immediately on focus and show
-  window.addEventListener('pageshow', () => {
-    loadCoursesFromCloud();
+  window.addEventListener('pageshow', async () => {
+    try { localStorage.removeItem('csp_db_v4'); } catch(err){}
+    await loadCoursesFromCloud();
   });
-  window.addEventListener('focus', () => {
+  window.addEventListener('focus', async () => {
+    try { localStorage.removeItem('csp_db_v4'); } catch(err){}
     if (window.Store && typeof Store.syncWithFirebase === 'function') {
-      Store.syncWithFirebase().then(() => renderCourses());
+      await Store.syncWithFirebase();
+      renderCourses();
     }
   });
 

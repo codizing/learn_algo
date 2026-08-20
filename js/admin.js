@@ -609,16 +609,11 @@ document.addEventListener('DOMContentLoaded', ()=>{
   }
 
   async function initAdminData() {
-    renderCourseTable();
-    renderQuizTable();
-    renderUsersTable();
-
-    if (window.refreshCloudSync) {
-      try { await window.refreshCloudSync(); } catch (e) { console.warn('admin sync:', e); }
-    } else if (window.cloudSyncReady) {
-      try { await window.cloudSyncReady; } catch (e) {}
-    } else if (window.Store && typeof Store.syncWithFirebase === 'function') {
+    try { localStorage.removeItem('csp_db_v4'); } catch (e) {}
+    if (window.Store && typeof Store.syncWithFirebase === 'function') {
       try { await Store.syncWithFirebase(); } catch (e) {}
+    } else if (window.refreshCloudSync) {
+      try { await window.refreshCloudSync(); } catch (e) {}
     }
 
     renderCourseTable();

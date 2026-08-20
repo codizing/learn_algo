@@ -11,8 +11,9 @@
 const DB_KEY = 'csp_db_v5';
 let memoryDB = null;
 
-// Persistent local storage cache. Updated whenever Firestore syncs.
-// No destructive removeItem on startup so the UI renders instantly from cache.
+try {
+  localStorage.removeItem('csp_db_v4');
+} catch (e) {}
 
 function normalizeCourse(c) {
   if (!c || typeof c !== 'object') return null;
